@@ -58,13 +58,31 @@ select:focus,input:focus{border-color:#534AB7}
 .toast.show{opacity:1}
 .diff-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid #f1efe8;font-size:13px}
 .diff-row:last-child{border-bottom:none}
-.status-bar{background:#EAF3DE;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#3B6D11;display:flex;align-items:center;gap:8px}
-.status-bar.err{background:#FCEBEB;color:#791F1F}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* Login */
+#login-screen{position:fixed;inset:0;background:#f5f4f0;display:flex;align-items:center;justify-content:center;z-index:999;padding:24px}
+.login-card{background:#fff;border-radius:16px;border:0.5px solid #d3d1c7;padding:32px 24px;width:100%;max-width:360px;text-align:center}
+.login-logo{font-size:40px;margin-bottom:12px}
+.login-title{font-size:20px;font-weight:500;margin-bottom:4px}
+.login-sub{font-size:13px;color:#888780;margin-bottom:24px}
+.login-err{font-size:13px;color:#993C1D;margin-top:8px;min-height:18px}
 </style>
 </head>
 <body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🏠</div>
+    <div class="login-title">Casa Spese</div>
+    <div class="login-sub">Antonio &amp; Concetta</div>
+    <label style="text-align:left">Password</label>
+    <input type="password" id="pwd-input" placeholder="Inserisci la password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn" onclick="doLogin()" id="btn-login"><i class="ti ti-lock-open" aria-hidden="true"></i> Accedi</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
 
 <div class="header">
   <h1><i class="ti ti-home" aria-hidden="true"></i> Casa Spese</h1>
@@ -84,7 +102,6 @@ select:focus,input:focus{border-color:#534AB7}
 <div class="section active" id="sec-aggiungi">
   <div class="card">
     <div class="card-title"><i class="ti ti-pencil" aria-hidden="true"></i> Nuova spesa</div>
-    <div id="status-aggiungi"></div>
     <div class="person-toggle">
       <div class="ptab active" id="pt-antonio" onclick="selectPerson('Antonio')">Antonio</div>
       <div class="ptab" id="pt-concetta" onclick="selectPerson('Concetta')">Concetta</div>
@@ -169,14 +186,27 @@ select:focus,input:focus{border-color:#534AB7}
 <div class="toast" id="toast"></div>
 
 <script>
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxdeI_zrF7srX_HtYANrnRCINqAc6WlCxzFb9npnPb6e4PygZ2umfDwLhssx_o_9jgA6A/exec';
+const WEBAPP_URL='https://script.google.com/macros/s/AKfycbxdeI_zrF7srX_HtYANrnRCINqAc6WlCxzFb9npnPb6e4PygZ2umfDwLhssx_o_9jgA6A/exec';
+const PWD='casaAC2024';
 const CATS=['Casa','Alimenti','Benessere','Pulizia','Svago','Vacanza','Altro'];
 const CAT_EMOJI={Casa:'🏠',Alimenti:'🛒',Benessere:'💆',Pulizia:'🧹',Svago:'🎉',Vacanza:'✈️',Altro:'📦'};
 const CAT_BG={Casa:'#E1F5EE',Alimenti:'#EEEDFE',Benessere:'#FAEEDA',Pulizia:'#E6F1FB',Svago:'#FBEAF0',Vacanza:'#EAF3DE',Altro:'#F1EFE8'};
 const PALETTE=['#534AB7','#1D9E75','#EF9F27','#378ADD','#D4537E','#639922','#888780'];
 
-let selectedPerson='Antonio', listaFiltro='Tutti', riepilogoMese=new Date();
-let spese=[], chartA=null, chartB=null, chartC=null;
+let selectedPerson='Antonio',listaFiltro='Tutti',riepilogoMese=new Date();
+let spese=[],chartA=null,chartB=null,chartC=null;
+
+function doLogin(){
+  const val=document.getElementById('pwd-input').value;
+  if(val===PWD){
+    document.getElementById('login-screen').style.display='none';
+    sessionStorage.setItem('auth','1');
+    caricaSpese();
+  } else {
+    document.getElementById('login-err').textContent='Password errata — riprova';
+    document.getElementById('pwd-input').value='';
+  }
+}
 
 function toast(msg){
   const t=document.getElementById('toast');
@@ -208,17 +238,16 @@ function filtraLista(f){
 
 async function caricaSpese(){
   try{
-    const r=await fetch(WEBAPP_URL);
+    const r=await fetch(WEBAPP_URL+'?action=read&pwd='+PWD);
     if(!r.ok) throw new Error();
     const data=await r.json();
+    if(data.errore) throw new Error(data.errore);
     const rows=data.dati||[];
     spese=rows.slice(1).filter(r=>r[0]).map(row=>({
       id:row[0],persona:row[1],cat:row[2],desc:row[3],
       imp:parseFloat(row[4])||0,data:row[5],pag:row[6],note:row[7]||''
     }));
-  }catch(e){
-    toast('❌ Errore caricamento dati');
-  }
+  }catch(e){toast('❌ Errore caricamento dati');}
 }
 
 async function ricarica(){
@@ -240,16 +269,18 @@ async function aggiungiSpesa(){
   btn.innerHTML='<span class="spinner"></span> Salvo...';btn.disabled=true;
   const entry={id:Date.now(),persona:selectedPerson,cat,desc,imp,data,pag,note};
   try{
-    const params=new URLSearchParams({action:'add',id:entry.id,persona:entry.persona,cat:entry.cat,desc:entry.desc,imp:entry.imp,data:entry.data,pag:entry.pag,note:entry.note||''});
+    const params=new URLSearchParams({action:'add',pwd:PWD,id:entry.id,persona:entry.persona,cat:entry.cat,desc:entry.desc,imp:entry.imp,data:entry.data,pag:entry.pag,note:entry.note||''});
     const r=await fetch(WEBAPP_URL+'?'+params.toString());
     if(!r.ok) throw new Error();
+    const res=await r.json();
+    if(res.errore) throw new Error(res.errore);
     spese.push(entry);
     toast('✓ Spesa salvata nel foglio!');
     document.getElementById('categoria').value='';
     document.getElementById('descrizione').value='';
     document.getElementById('importo').value='';
     document.getElementById('note').value='';
-  }catch(e){toast('❌ '+e.message);}
+  }catch(e){toast('❌ Errore salvataggio — riprova');}
   btn.innerHTML='<i class="ti ti-check"></i> Salva spesa';btn.disabled=false;
 }
 
@@ -276,7 +307,7 @@ async function eliminaSpesa(id){
   const removed=spese.splice(idx,1)[0];
   renderLista();
   try{
-    const params=new URLSearchParams({action:'delete',id});
+    const params=new URLSearchParams({action:'delete',pwd:PWD,id});
     await fetch(WEBAPP_URL+'?'+params.toString());
     toast('Spesa eliminata');
   }catch(e){spese.splice(idx,0,removed);renderLista();toast('❌ Errore eliminazione');}
@@ -338,7 +369,10 @@ function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 document.getElementById('data').value=new Date().toISOString().split('T')[0];
 riepilogoMese=new Date();
 document.getElementById('mese-label').textContent=getMeseLabel(riepilogoMese);
-caricaSpese();
+if(sessionStorage.getItem('auth')==='1'){
+  document.getElementById('login-screen').style.display='none';
+  caricaSpese();
+}
 </script>
 </body>
 </html>
