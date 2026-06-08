@@ -187,7 +187,7 @@ select:focus,input:focus{border-color:#534AB7}
 
 <script>
 const WEBAPP_URL='https://script.google.com/macros/s/AKfycbxdeI_zrF7srX_HtYANrnRCINqAc6WlCxzFb9npnPb6e4PygZ2umfDwLhssx_o_9jgA6A/exec';
-const PWD='Tony&Concy2026!';
+let PWD='';
 const CATS=['Casa','Alimenti','Benessere','Pulizia','Svago','Vacanza','Altro'];
 const CAT_EMOJI={Casa:'🏠',Alimenti:'🛒',Benessere:'💆',Pulizia:'🧹',Svago:'🎉',Vacanza:'✈️',Altro:'📦'};
 const CAT_BG={Casa:'#E1F5EE',Alimenti:'#EEEDFE',Benessere:'#FAEEDA',Pulizia:'#E6F1FB',Svago:'#FBEAF0',Vacanza:'#EAF3DE',Altro:'#F1EFE8'};
@@ -196,16 +196,30 @@ const PALETTE=['#534AB7','#1D9E75','#EF9F27','#378ADD','#D4537E','#639922','#888
 let selectedPerson='Antonio',listaFiltro='Tutti',riepilogoMese=new Date();
 let spese=[],chartA=null,chartB=null,chartC=null;
 
-function doLogin(){
-  const val=document.getElementById('pwd-input').value;
-  if(val===PWD){
-    document.getElementById('login-screen').style.display='none';
-    sessionStorage.setItem('auth','1');
-    caricaSpese();
-  } else {
-    document.getElementById('login-err').textContent='Password errata — riprova';
-    document.getElementById('pwd-input').value='';
-  }
+async function doLogin(){
+  const val=document.getElementById('pwd-input').value.trim();
+  if(!val){document.getElementById('login-err').textContent='Inserisci la password';return;}
+  const btn=document.getElementById('btn-login');
+  btn.innerHTML='<span class="spinner"></span> Verifico...';btn.disabled=true;
+  try{
+    const r=await fetch(WEBAPP_URL+'?action=read&pwd='+encodeURIComponent(val));
+    const data=await r.json();
+    if(data.errore){
+      document.getElementById('login-err').textContent='Password errata — riprova';
+      document.getElementById('pwd-input').value='';
+    } else {
+      PWD=val;
+      document.getElementById('login-screen').style.display='none';
+      sessionStorage.setItem('auth','1');
+      sessionStorage.setItem('pwd',val);
+      const rows=data.dati||[];
+      spese=rows.slice(1).filter(r=>r[0]).map(row=>({
+        id:row[0],persona:row[1],cat:row[2],desc:row[3],
+        imp:parseFloat(row[4])||0,data:row[5],pag:row[6],note:row[7]||''
+      }));
+    }
+  }catch(e){document.getElementById('login-err').textContent='Errore di rete — riprova';}
+  btn.innerHTML='<i class="ti ti-lock-open"></i> Accedi';btn.disabled=false;
 }
 
 function toast(msg){
@@ -370,6 +384,7 @@ document.getElementById('data').value=new Date().toISOString().split('T')[0];
 riepilogoMese=new Date();
 document.getElementById('mese-label').textContent=getMeseLabel(riepilogoMese);
 if(sessionStorage.getItem('auth')==='1'){
+  PWD=sessionStorage.getItem('pwd')||'';
   document.getElementById('login-screen').style.display='none';
   caricaSpese();
 }
