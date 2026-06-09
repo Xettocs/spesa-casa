@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Casa Spese</title>
+<link rel="manifest" href="data:application/json,{%22name%22:%22Casa%20Spese%22,%22short_name%22:%22Casa%20Spese%22,%22display%22:%22standalone%22,%22background_color%22:%22%23f5f4f0%22}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -24,11 +25,11 @@ label{font-size:13px;color:#888780;display:block;margin-bottom:4px;margin-top:10
 select,input{width:100%;padding:9px 12px;border:0.5px solid #d3d1c7;border-radius:8px;font-size:14px;color:#1a1a18;background:#fff;outline:none}
 select:focus,input:focus{border-color:#534AB7}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .btn{width:100%;padding:10px;border-radius:8px;border:none;background:#534AB7;color:#fff;font-size:13px;font-weight:500;cursor:pointer;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .2s}
 .btn:hover{opacity:.88}.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-outline{background:#fff;color:#534AB7;border:0.5px solid #534AB7!important}
 .btn-red{background:#C0392B}
-.btn-sm{padding:7px 10px;font-size:12px;margin-top:0;width:auto}
 .person-toggle{display:flex;border-radius:8px;overflow:hidden;border:0.5px solid #d3d1c7;margin-bottom:12px}
 .ptab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;background:#fff;color:#888780;transition:all .2s}
 .ptab.active{background:#534AB7;color:#fff}
@@ -40,6 +41,7 @@ select:focus,input:focus{border-color:#534AB7}
 .entry-info .meta{font-size:11px;color:#888780;margin-top:1px}
 .entry-amount{font-size:13px;font-weight:500;color:#534AB7;white-space:nowrap}
 .entry-del{background:none;border:none;color:#b4b2a9;cursor:pointer;font-size:15px;padding:4px;flex-shrink:0}
+.entry-del.disabled{opacity:.3;cursor:not-allowed}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .stat{background:#f5f4f0;border-radius:8px;padding:10px}
 .stat-label{font-size:11px;color:#888780;margin-bottom:3px}
@@ -65,30 +67,36 @@ select:focus,input:focus{border-color:#534AB7}
 .diff-row:last-child{border-bottom:none}
 .spinner{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-/* Login */
 #login-screen{position:fixed;inset:0;background:#f5f4f0;display:flex;align-items:center;justify-content:center;z-index:999;padding:24px}
 .login-card{background:#fff;border-radius:16px;border:0.5px solid #d3d1c7;padding:28px 22px;width:100%;max-width:340px;text-align:center}
 .login-logo{font-size:38px;margin-bottom:10px}
 .login-title{font-size:19px;font-weight:500;margin-bottom:4px}
 .login-sub{font-size:13px;color:#888780;margin-bottom:20px}
 .login-err{font-size:12px;color:#993C1D;margin-top:8px;min-height:16px}
-/* Todo / Lista spesa */
 .todo-item{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:0.5px solid #f1efe8}
 .todo-item:last-child{border-bottom:none}
-.todo-check{width:18px;height:18px;border-radius:4px;border:1.5px solid #d3d1c7;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px}
+.todo-check{width:20px;height:20px;border-radius:5px;border:1.5px solid #d3d1c7;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .2s}
 .todo-check.done{background:#534AB7;border-color:#534AB7;color:#fff}
 .todo-info{flex:1;min-width:0}
 .todo-text{font-size:13px;font-weight:500}
 .todo-text.done{text-decoration:line-through;color:#b4b2a9}
-.todo-meta{font-size:11px;color:#888780;margin-top:2px}
+.todo-meta{font-size:11px;color:#888780;margin-top:2px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .todo-del{background:none;border:none;color:#b4b2a9;cursor:pointer;font-size:14px;padding:3px;flex-shrink:0}
+/* Confirm dialog */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}
+.confirm-box{background:#fff;border-radius:14px;padding:22px;max-width:300px;width:100%;text-align:center}
+.confirm-box p{font-size:14px;margin-bottom:16px;color:#1a1a18;line-height:1.5}
+.confirm-btns{display:flex;gap:10px}
+.confirm-btns button{flex:1;padding:10px;border-radius:8px;border:none;font-size:13px;font-weight:500;cursor:pointer}
+.confirm-ok{background:#C0392B;color:#fff}
+.confirm-cancel{background:#f5f4f0;color:#1a1a18}
 </style>
 </head>
 <body>
 
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">🏠</div>
+    <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
     <label style="text-align:left">Password</label>
@@ -98,8 +106,19 @@ select:focus,input:focus{border-color:#534AB7}
   </div>
 </div>
 
+<!-- Confirm dialog -->
+<div class="confirm-overlay" id="confirm-overlay" style="display:none">
+  <div class="confirm-box">
+    <p id="confirm-msg">Sei sicuro?</p>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="confirmRispondi(false)">Annulla</button>
+      <button class="confirm-ok" onclick="confirmRispondi(true)">Elimina</button>
+    </div>
+  </div>
+</div>
+
 <div class="header">
-  <h1><i class="ti ti-home"></i> Casa Spese</h1>
+  <h1>👩🏻‍❤️‍👨🏻 Casa Spese</h1>
   <p>Antonio &amp; Concetta</p>
 </div>
 
@@ -161,6 +180,40 @@ select:focus,input:focus{border-color:#534AB7}
       <div class="ptab active" id="lt-tutti" onclick="filtraLista('Tutti')">Tutti</div>
       <div class="ptab" id="lt-antonio" onclick="filtraLista('Antonio')">Antonio</div>
       <div class="ptab" id="lt-concetta" onclick="filtraLista('Concetta')">Concetta</div>
+    </div>
+    <div class="row3" style="margin-bottom:10px">
+      <div>
+        <select id="lista-mese" onchange="renderLista()">
+          <option value="">Mese</option>
+          <option value="1">Gennaio</option><option value="2">Febbraio</option>
+          <option value="3">Marzo</option><option value="4">Aprile</option>
+          <option value="5">Maggio</option><option value="6">Giugno</option>
+          <option value="7">Luglio</option><option value="8">Agosto</option>
+          <option value="9">Settembre</option><option value="10">Ottobre</option>
+          <option value="11">Novembre</option><option value="12">Dicembre</option>
+        </select>
+      </div>
+      <div>
+        <select id="lista-anno" onchange="renderLista()">
+          <option value="">Anno</option>
+        </select>
+      </div>
+      <div>
+        <select id="lista-cat" onchange="renderLista()">
+          <option value="">Categoria</option>
+          <option value="Abbonamenti">📱 Abbonamenti</option>
+          <option value="Beauty">💄 Beauty</option>
+          <option value="Casa">🏠 Casa</option>
+          <option value="Farmacia">💊 Farmacia</option>
+          <option value="Regali">🎁 Regali</option>
+          <option value="Ristoranti">🍽️ Ristoranti</option>
+          <option value="Shopping">🛍️ Shopping</option>
+          <option value="Supermercati">🛒 Supermercati</option>
+          <option value="Trasporti">🚗 Trasporti</option>
+          <option value="Vacanza">✈️ Vacanza</option>
+          <option value="Varie">📦 Varie</option>
+        </select>
+      </div>
     </div>
     <button class="btn btn-outline" style="margin-bottom:10px" onclick="ricarica()"><i class="ti ti-refresh"></i> Aggiorna dal foglio</button>
     <div id="lista-spese"><div class="empty">Caricamento...</div></div>
@@ -256,9 +309,12 @@ select:focus,input:focus{border-color:#534AB7}
     <button class="btn" onclick="aggiungiSpesaItem()"><i class="ti ti-plus"></i> Aggiungi alla lista</button>
   </div>
   <div class="card">
-    <div class="card-title"><i class="ti ti-list"></i> Lista della spesa</div>
-    <div id="lista-spesa-items"><div class="empty">Lista vuota</div></div>
-    <button class="btn btn-outline" style="margin-top:10px" onclick="pulisciAcquistati()"><i class="ti ti-trash"></i> Rimuovi acquistati</button>
+    <div class="card-title" style="justify-content:space-between">
+      <span><i class="ti ti-list"></i> Lista della spesa</span>
+      <button class="btn btn-outline" style="width:auto;margin-top:0;padding:5px 10px;font-size:11px" onclick="ricaricaSpesa()"><i class="ti ti-refresh"></i></button>
+    </div>
+    <div id="lista-spesa-items"><div class="empty">Caricamento...</div></div>
+    <button class="btn btn-red" style="margin-top:10px" onclick="pulisciAcquistati()"><i class="ti ti-trash"></i> Rimuovi acquistati</button>
   </div>
 </div>
 
@@ -269,25 +325,24 @@ select:focus,input:focus{border-color:#534AB7}
     <label>Cosa fare</label>
     <input type="text" id="todo-text" placeholder="es. Pagare bolletta...">
     <div class="row2">
-      <div>
-        <label>Entro il (opzionale)</label>
-        <input type="date" id="todo-date">
-      </div>
-      <div>
-        <label>Chi deve farlo</label>
-        <select id="todo-person">
-          <option value="">— Chiunque —</option>
-          <option value="Antonio">Antonio</option>
-          <option value="Concetta">Concetta</option>
-        </select>
-      </div>
+      <div><label>Entro il (opzionale)</label><input type="date" id="todo-date"></div>
+      <div><label>Ora (opzionale)</label><input type="time" id="todo-ora"></div>
     </div>
+    <label>Chi deve farlo (opzionale)</label>
+    <select id="todo-person">
+      <option value="">— Chiunque —</option>
+      <option value="Antonio">Antonio</option>
+      <option value="Concetta">Concetta</option>
+    </select>
     <button class="btn" onclick="aggiungiTodo()"><i class="ti ti-plus"></i> Aggiungi attività</button>
   </div>
   <div class="card">
-    <div class="card-title"><i class="ti ti-checkbox"></i> Attività</div>
-    <div id="todo-items"><div class="empty">Nessuna attività</div></div>
-    <button class="btn btn-outline" style="margin-top:10px" onclick="pulisciTodoFatti()"><i class="ti ti-trash"></i> Rimuovi completate</button>
+    <div class="card-title" style="justify-content:space-between">
+      <span><i class="ti ti-checkbox"></i> Attività</span>
+      <button class="btn btn-outline" style="width:auto;margin-top:0;padding:5px 10px;font-size:11px" onclick="ricaricaTodo()"><i class="ti ti-refresh"></i></button>
+    </div>
+    <div id="todo-items"><div class="empty">Caricamento...</div></div>
+    <button class="btn btn-red" style="margin-top:10px" onclick="pulisciTodoFatti()"><i class="ti ti-trash"></i> Rimuovi completate</button>
   </div>
 </div>
 
@@ -301,12 +356,26 @@ const CAT_EMOJI={Abbonamenti:'📱',Beauty:'💄',Casa:'🏠',Farmacia:'💊',Re
 const CAT_BG={Abbonamenti:'#EDE9FB',Beauty:'#FBEAF0',Casa:'#E1F5EE',Farmacia:'#FCEBEB',Regali:'#FFF3E0',Ristoranti:'#FFF8E1',Shopping:'#E8F5E9',Supermercati:'#EEEDFE',Trasporti:'#E6F1FB',Vacanza:'#EAF3DE',Varie:'#F1EFE8'};
 const PALETTE=['#534AB7','#1D9E75','#EF9F27','#378ADD','#D4537E','#639922','#888780','#E67E22','#8E44AD','#16A085','#C0392B'];
 
-let PWD='', selectedPerson='Antonio', spesaPerson='Antonio';
-let listaFiltro='Tutti';
+let PWD='', selectedPerson='Antonio', spesaPerson='Antonio', listaFiltro='Tutti';
 let spese=[], listaSpesa=[], todoItems=[];
-let chartA=null, chartB=null, chartC=null, chartCat=null;
-let graficoPeriod='mensile', graficoCursor=new Date();
-let riepilogoPeriod='mensile', riepilogoCursor=new Date();
+let chartA=null,chartB=null,chartC=null,chartCat=null;
+let graficoPeriod='mensile',graficoCursor=new Date();
+let riepilogoPeriod='mensile',riepilogoCursor=new Date();
+let salvando=false;
+
+// ---- CONFIRM ----
+let _confirmResolve=null;
+function conferma(msg){
+  return new Promise(res=>{
+    _confirmResolve=res;
+    document.getElementById('confirm-msg').textContent=msg;
+    document.getElementById('confirm-overlay').style.display='flex';
+  });
+}
+function confirmRispondi(val){
+  document.getElementById('confirm-overlay').style.display='none';
+  if(_confirmResolve){_confirmResolve(val);_confirmResolve=null;}
+}
 
 // ---- LOGIN ----
 async function doLogin(){
@@ -315,18 +384,17 @@ async function doLogin(){
   const btn=document.getElementById('btn-login');
   btn.innerHTML='<span class="spinner"></span> Verifico...';btn.disabled=true;
   try{
-    const r=await fetch(WEBAPP_URL+'?action=read&pwd='+encodeURIComponent(val));
+    const r=await fetch(WEBAPP_URL+'?action=read&foglio=Spese&pwd='+encodeURIComponent(val));
     const data=await r.json();
     if(data.errore){
       document.getElementById('login-err').textContent='Password errata — riprova';
       document.getElementById('pwd-input').value='';
-    } else {
+    }else{
       PWD=val;
       document.getElementById('login-screen').style.display='none';
-      sessionStorage.setItem('auth','1');
-      sessionStorage.setItem('pwd',val);
+      sessionStorage.setItem('auth','1');sessionStorage.setItem('pwd',val);
       parseSpese(data.dati||[]);
-      loadLocale();
+      popolaAnni();
     }
   }catch(e){document.getElementById('login-err').textContent='Errore di rete — riprova';}
   btn.innerHTML='<i class="ti ti-lock-open"></i> Accedi';btn.disabled=false;
@@ -338,36 +406,31 @@ function toast(msg){
   t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2400);
 }
-
 function parseImporto(val){
-  // Accetta sia virgola che punto come separatore decimale
   let s=String(val).trim().replace(/\s/g,'');
-  // Se ci sono sia punto che virgola, rimuovi il separatore migliaia
-  if(s.includes(',')&&s.includes('.')) s=s.replace('.','');
+  if(s.includes(',')&&s.includes('.')) s=s.replace(/\./g,'');
   s=s.replace(',','.');
   return parseFloat(s)||0;
 }
-
-function formatEur(val){
-  return parseFloat(val).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
-}
-
+function formatEur(val){return parseFloat(val).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function parseSpese(rows){
   spese=rows.slice(1).filter(r=>r[0]).map(row=>({
-    id:row[0],persona:row[1],cat:row[2],desc:row[3],
+    id:String(row[0]),persona:row[1],cat:row[2],desc:row[3],
     imp:parseImporto(row[4]),data:row[5],pag:row[6],note:row[7]||''
   }));
 }
-
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-
-// ---- LOCALE STORAGE (lista spesa e todo) ----
-function loadLocale(){
-  try{listaSpesa=JSON.parse(localStorage.getItem('listaSpesa')||'[]');}catch(e){listaSpesa=[];}
-  try{todoItems=JSON.parse(localStorage.getItem('todoItems')||'[]');}catch(e){todoItems=[];}
+function api(params){
+  const p=new URLSearchParams({...params,pwd:PWD});
+  return fetch(WEBAPP_URL+'?'+p.toString()).then(r=>r.json());
 }
-function saveListaSpesa(){localStorage.setItem('listaSpesa',JSON.stringify(listaSpesa));}
-function saveTodo(){localStorage.setItem('todoItems',JSON.stringify(todoItems));}
+function popolaAnni(){
+  const anni=[...new Set(spese.map(s=>s.data?String(s.data).substring(0,4):null).filter(Boolean))].sort((a,b)=>b-a);
+  const sel=document.getElementById('lista-anno');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Anno</option>'+anni.map(a=>`<option value="${a}">${a}</option>`).join('');
+  if(cur) sel.value=cur;
+}
 
 // ---- TABS ----
 function switchTab(name){
@@ -378,32 +441,23 @@ function switchTab(name){
   if(name==='lista') renderLista();
   if(name==='grafici'){aggiornaGraficoLabel();renderGrafici();}
   if(name==='riepilogo'){aggiornaRiepilogoLabel();renderRiepilogo();}
-  if(name==='spesa') renderListaSpesa();
-  if(name==='todo') renderTodo();
+  if(name==='spesa') ricaricaSpesa();
+  if(name==='todo') ricaricaTodo();
 }
 
 // ---- SPESE ----
 function selectPerson(p){
   selectedPerson=p;
-  document.getElementById('pt-antonio').classList.toggle('active',p==='Antonio');
-  document.getElementById('pt-concetta').classList.toggle('active',p==='Concetta');
+  ['antonio','concetta'].forEach(x=>document.getElementById('pt-'+x).classList.toggle('active',p.toLowerCase()===x));
 }
-
 async function caricaSpese(){
-  try{
-    const r=await fetch(WEBAPP_URL+'?action=read&pwd='+encodeURIComponent(PWD));
-    if(!r.ok) throw new Error();
-    const data=await r.json();
-    if(data.errore) throw new Error();
-    parseSpese(data.dati||[]);
-  }catch(e){toast('❌ Errore caricamento dati');}
+  const data=await api({action:'read',foglio:'Spese'});
+  if(!data.errore) parseSpese(data.dati||[]);
+  popolaAnni();
 }
-
 async function ricarica(){
-  document.getElementById('lista-spese').innerHTML='<div class="empty"><span class="spinner"></span> Caricamento...</div>';
-  await caricaSpese();
-  renderLista();
-  toast('✓ Dati aggiornati');
+  document.getElementById('lista-spese').innerHTML='<div class="empty"><span class="spinner"></span></div>';
+  await caricaSpese();renderLista();toast('✓ Dati aggiornati');
 }
 
 function filtraLista(f){
@@ -413,223 +467,176 @@ function filtraLista(f){
 }
 
 async function aggiungiSpesa(){
+  if(salvando) return;
   const cat=document.getElementById('categoria').value;
   const desc=document.getElementById('descrizione').value.trim();
-  const impRaw=document.getElementById('importo').value;
-  const imp=parseImporto(impRaw);
+  const imp=parseImporto(document.getElementById('importo').value);
   const data=document.getElementById('data').value;
   const pag=document.getElementById('pagamento').value;
   const note=document.getElementById('note').value.trim();
   if(!cat||!desc||!imp||imp<=0||!data){toast('⚠️ Compila tutti i campi obbligatori');return;}
   const btn=document.getElementById('btn-salva');
   btn.innerHTML='<span class="spinner"></span> Salvo...';btn.disabled=true;
-  // Salva con virgola come separatore decimale
+  salvando=true;
+  const id=String(Date.now());
   const impStr=imp.toFixed(2).replace('.',',');
-  const entry={id:Date.now(),persona:selectedPerson,cat,desc,imp,data,pag,note};
   try{
-    const params=new URLSearchParams({action:'add',pwd:PWD,id:entry.id,persona:entry.persona,cat:entry.cat,desc:entry.desc,imp:impStr,data:entry.data,pag:entry.pag,note:entry.note||''});
-    const r=await fetch(WEBAPP_URL+'?'+params.toString());
-    if(!r.ok) throw new Error();
-    const res=await r.json();
-    if(res.errore) throw new Error();
-    spese.push(entry);
+    const res=await api({action:'add',foglio:'Spese',id,persona:selectedPerson,cat,desc,imp:impStr,data,pag,note});
+    if(res.errore) throw new Error(res.errore);
+    if(!res.duplicato) spese.push({id,persona:selectedPerson,cat,desc,imp,data,pag,note});
     toast('✓ Spesa salvata!');
     document.getElementById('categoria').value='';
     document.getElementById('descrizione').value='';
     document.getElementById('importo').value='';
     document.getElementById('note').value='';
+    popolaAnni();
   }catch(e){toast('❌ Errore salvataggio — riprova');}
   btn.innerHTML='<i class="ti ti-check"></i> Salva spesa';btn.disabled=false;
+  salvando=false;
 }
 
 function renderLista(){
   const el=document.getElementById('lista-spese');
-  let filtered=[...spese].filter(s=>listaFiltro==='Tutti'||s.persona===listaFiltro);
+  const mese=document.getElementById('lista-mese').value;
+  const anno=document.getElementById('lista-anno').value;
+  const cat=document.getElementById('lista-cat').value;
+  let filtered=[...spese].filter(s=>{
+    if(listaFiltro!=='Tutti'&&s.persona!==listaFiltro) return false;
+    if(anno&&String(s.data).substring(0,4)!==anno) return false;
+    if(mese&&parseInt(String(s.data).substring(5,7))!==parseInt(mese)) return false;
+    if(cat&&s.cat!==cat) return false;
+    return true;
+  });
   filtered.sort((a,b)=>String(b.data).localeCompare(String(a.data)));
   if(!filtered.length){el.innerHTML='<div class="empty">Nessuna spesa</div>';return;}
-  el.innerHTML=filtered.map(s=>`
-    <div class="entry">
+  el.innerHTML=filtered.map(s=>{
+    const puoElim=s.persona===selectedPerson;
+    return`<div class="entry">
       <div class="entry-cat" style="background:${CAT_BG[s.cat]||'#f1efe8'}">${CAT_EMOJI[s.cat]||'📦'}</div>
       <div class="entry-info">
         <div class="desc">${esc(s.desc)}</div>
         <div class="meta">${s.data} · <span class="badge ${s.persona==='Antonio'?'badge-ant':'badge-con'}">${s.persona}</span> · ${s.cat} · ${s.pag}</div>
       </div>
       <div class="entry-amount">€${formatEur(s.imp)}</div>
-      <button class="entry-del" onclick="eliminaSpesa('${s.id}')"><i class="ti ti-trash"></i></button>
-    </div>`).join('');
+      <button class="entry-del ${puoElim?'':'disabled'}" onclick="${puoElim?`eliminaSpesa('${s.id}')`:''}" title="${puoElim?'Elimina':'Solo '+s.persona+' può eliminare'}"><i class="ti ti-trash"></i></button>
+    </div>`;
+  }).join('');
 }
 
 async function eliminaSpesa(id){
-  const idx=spese.findIndex(s=>String(s.id)===String(id));
+  const ok=await conferma('Eliminare questa spesa?');
+  if(!ok) return;
+  const idx=spese.findIndex(s=>s.id===id);
   if(idx===-1) return;
   const removed=spese.splice(idx,1)[0];
   renderLista();
   try{
-    const params=new URLSearchParams({action:'delete',pwd:PWD,id});
-    await fetch(WEBAPP_URL+'?'+params.toString());
+    await api({action:'delete',foglio:'Spese',id});
     toast('Spesa eliminata');
   }catch(e){spese.splice(idx,0,removed);renderLista();toast('❌ Errore eliminazione');}
 }
 
 // ---- GRAFICI ----
-function setGraficoPeriod(p){
-  graficoPeriod=p;
-  document.getElementById('gt-mensile').classList.toggle('active',p==='mensile');
-  document.getElementById('gt-annuale').classList.toggle('active',p==='annuale');
-  aggiornaGraficoLabel();renderGrafici();
-}
-
-function navGrafico(dir){
-  if(graficoPeriod==='mensile') graficoCursor=new Date(graficoCursor.getFullYear(),graficoCursor.getMonth()+dir,1);
-  else graficoCursor=new Date(graficoCursor.getFullYear()+dir,0,1);
-  aggiornaGraficoLabel();renderGrafici();
-}
-
-function aggiornaGraficoLabel(){
-  document.getElementById('grafico-periodo-label').textContent=
-    graficoPeriod==='mensile'
-      ? graficoCursor.toLocaleDateString('it-IT',{month:'long',year:'numeric'})
-      : graficoCursor.getFullYear();
-}
-
-function filtraPerPeriodo(arr, cursor, period){
-  return arr.filter(s=>{
-    const d=new Date(s.data);
-    if(period==='mensile') return d.getFullYear()===cursor.getFullYear()&&d.getMonth()===cursor.getMonth();
-    return d.getFullYear()===cursor.getFullYear();
-  });
-}
+function setGraficoPeriod(p){graficoPeriod=p;document.getElementById('gt-mensile').classList.toggle('active',p==='mensile');document.getElementById('gt-annuale').classList.toggle('active',p==='annuale');aggiornaGraficoLabel();renderGrafici();}
+function navGrafico(dir){if(graficoPeriod==='mensile')graficoCursor=new Date(graficoCursor.getFullYear(),graficoCursor.getMonth()+dir,1);else graficoCursor=new Date(graficoCursor.getFullYear()+dir,0,1);aggiornaGraficoLabel();renderGrafici();}
+function aggiornaGraficoLabel(){document.getElementById('grafico-periodo-label').textContent=graficoPeriod==='mensile'?graficoCursor.toLocaleDateString('it-IT',{month:'long',year:'numeric'}):graficoCursor.getFullYear();}
+function filtraPerPeriodo(arr,cursor,period){return arr.filter(s=>{const d=new Date(s.data);return period==='mensile'?d.getFullYear()===cursor.getFullYear()&&d.getMonth()===cursor.getMonth():d.getFullYear()===cursor.getFullYear();});}
 
 function renderGrafici(){
   const catFilter=document.getElementById('grafico-cat-filter').value;
   const container=document.getElementById('grafici-container');
-  if(chartA){chartA.destroy();chartA=null;}
-  if(chartB){chartB.destroy();chartB=null;}
-  if(chartCat){chartCat.destroy();chartCat=null;}
-
+  if(chartA){chartA.destroy();chartA=null;}if(chartB){chartB.destroy();chartB=null;}if(chartCat){chartCat.destroy();chartCat=null;}
   if(catFilter){
-    // Confronto singola categoria: barre Antonio vs Concetta
-    container.innerHTML=`<div class="card"><div class="card-title">Confronto ${CAT_EMOJI[catFilter]||''} ${catFilter}</div><div class="chart-wrap" style="height:220px"><canvas id="chartCatConfronto"></canvas></div></div>`;
+    container.innerHTML=`<div class="card"><div class="card-title">Confronto ${CAT_EMOJI[catFilter]||''} ${catFilter}</div><div class="chart-wrap" style="height:220px"><canvas id="chartCatC"></canvas></div></div>`;
     const filtered=filtraPerPeriodo(spese,graficoCursor,graficoPeriod).filter(s=>s.cat===catFilter);
     const tA=filtered.filter(s=>s.persona==='Antonio').reduce((a,s)=>a+s.imp,0);
     const tC=filtered.filter(s=>s.persona==='Concetta').reduce((a,s)=>a+s.imp,0);
-    chartCat=new Chart(document.getElementById('chartCatConfronto'),{
-      type:'bar',
-      data:{labels:['Antonio','Concetta'],datasets:[{data:[tA,tC],backgroundColor:['#534AB7','#9FE1CB'],borderRadius:6}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`€${formatEur(ctx.parsed.y)}`}}},scales:{y:{ticks:{callback:v=>'€'+v}}}}
-    });
+    chartCat=new Chart(document.getElementById('chartCatC'),{type:'bar',data:{labels:['Antonio','Concetta'],datasets:[{data:[tA,tC],backgroundColor:['#534AB7','#9FE1CB'],borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`€${formatEur(ctx.parsed.y)}`}}},scales:{y:{ticks:{callback:v=>'€'+v}}}}});
     return;
   }
-
-  // Grafici donut per persona
-  container.innerHTML=`
-    <div class="card"><div class="card-title"><span class="badge badge-ant">Antonio</span></div><div class="chart-wrap"><canvas id="chartAntonio"></canvas></div><div class="legend-wrap" id="legendAntonio"></div></div>
-    <div class="card"><div class="card-title"><span class="badge badge-con">Concetta</span></div><div class="chart-wrap"><canvas id="chartConcetta"></canvas></div><div class="legend-wrap" id="legendConcetta"></div></div>`;
-
+  container.innerHTML=`<div class="card"><div class="card-title"><span class="badge badge-ant">Antonio</span></div><div class="chart-wrap"><canvas id="chartAntonio"></canvas></div><div class="legend-wrap" id="legendAntonio"></div></div><div class="card"><div class="card-title"><span class="badge badge-con">Concetta</span></div><div class="chart-wrap"><canvas id="chartConcetta"></canvas></div><div class="legend-wrap" id="legendConcetta"></div></div>`;
   ['Antonio','Concetta'].forEach((persona,i)=>{
     const filtered=filtraPerPeriodo(spese,graficoCursor,graficoPeriod).filter(s=>s.persona===persona);
-    const t={};CATS.forEach(c=>t[c]=0);
-    filtered.forEach(s=>t[s.cat]=(t[s.cat]||0)+s.imp);
+    const t={};CATS.forEach(c=>t[c]=0);filtered.forEach(s=>t[s.cat]=(t[s.cat]||0)+s.imp);
     const total=Object.values(t).reduce((a,b)=>a+b,0);
     const legend=document.getElementById('legend'+persona);
     if(!total){legend.innerHTML='<span style="color:#b4b2a9;font-size:12px">Nessuna spesa</span>';return;}
-    const labels=CATS.filter(c=>t[c]>0);
-    const vals=labels.map(c=>t[c]);
-    const colors=PALETTE.slice(0,labels.length);
-    const ch=new Chart(document.getElementById('chart'+persona),{
-      type:'doughnut',
-      data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`€${formatEur(ctx.parsed)} (${((ctx.parsed/total)*100).toFixed(1)}%)`}}}}
-    });
+    const labels=CATS.filter(c=>t[c]>0),vals=labels.map(c=>t[c]),colors=PALETTE.slice(0,labels.length);
+    const ch=new Chart(document.getElementById('chart'+persona),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`€${formatEur(ctx.parsed)} (${((ctx.parsed/total)*100).toFixed(1)}%)`}}}}});
     if(i===0)chartA=ch;else chartB=ch;
     legend.innerHTML=labels.map((l,j)=>`<div class="legend-item"><div class="legend-dot" style="background:${colors[j]}"></div>${CAT_EMOJI[l]||''} ${l} €${formatEur(vals[j])}</div>`).join('');
   });
 }
 
 // ---- RIEPILOGO ----
-function setRiepilogoPeriod(p){
-  riepilogoPeriod=p;
-  document.getElementById('rt-mensile').classList.toggle('active',p==='mensile');
-  document.getElementById('rt-annuale').classList.toggle('active',p==='annuale');
-  aggiornaRiepilogoLabel();renderRiepilogo();
-}
-
-function navRiepilogo(dir){
-  if(riepilogoPeriod==='mensile') riepilogoCursor=new Date(riepilogoCursor.getFullYear(),riepilogoCursor.getMonth()+dir,1);
-  else riepilogoCursor=new Date(riepilogoCursor.getFullYear()+dir,0,1);
-  aggiornaRiepilogoLabel();renderRiepilogo();
-}
-
-function aggiornaRiepilogoLabel(){
-  document.getElementById('riepilogo-periodo-label').textContent=
-    riepilogoPeriod==='mensile'
-      ? riepilogoCursor.toLocaleDateString('it-IT',{month:'long',year:'numeric'})
-      : riepilogoCursor.getFullYear();
-}
+function setRiepilogoPeriod(p){riepilogoPeriod=p;document.getElementById('rt-mensile').classList.toggle('active',p==='mensile');document.getElementById('rt-annuale').classList.toggle('active',p==='annuale');aggiornaRiepilogoLabel();renderRiepilogo();}
+function navRiepilogo(dir){if(riepilogoPeriod==='mensile')riepilogoCursor=new Date(riepilogoCursor.getFullYear(),riepilogoCursor.getMonth()+dir,1);else riepilogoCursor=new Date(riepilogoCursor.getFullYear()+dir,0,1);aggiornaRiepilogoLabel();renderRiepilogo();}
+function aggiornaRiepilogoLabel(){document.getElementById('riepilogo-periodo-label').textContent=riepilogoPeriod==='mensile'?riepilogoCursor.toLocaleDateString('it-IT',{month:'long',year:'numeric'}):riepilogoCursor.getFullYear();}
 
 function renderRiepilogo(){
   const catFilter=document.getElementById('riepilogo-cat-filter').value;
   let filtered=filtraPerPeriodo(spese,riepilogoCursor,riepilogoPeriod);
   if(catFilter) filtered=filtered.filter(s=>s.cat===catFilter);
-  const sA=filtered.filter(s=>s.persona==='Antonio');
-  const sC=filtered.filter(s=>s.persona==='Concetta');
-  const tA=sA.reduce((a,s)=>a+s.imp,0);
-  const tC=sC.reduce((a,s)=>a+s.imp,0);
+  const sA=filtered.filter(s=>s.persona==='Antonio'),sC=filtered.filter(s=>s.persona==='Concetta');
+  const tA=sA.reduce((a,s)=>a+s.imp,0),tC=sC.reduce((a,s)=>a+s.imp,0);
   document.getElementById('tot-antonio').textContent=`€${formatEur(tA)}`;
   document.getElementById('tot-concetta').textContent=`€${formatEur(tC)}`;
   document.getElementById('n-antonio').textContent=`${sA.length} spese`;
   document.getElementById('n-concetta').textContent=`${sC.length} spese`;
   const diff=tA-tC,importo=Math.abs(diff);
   const ds=document.getElementById('diff-section');
-  if(tA+tC>0){
-    const debitore=diff>0?'Concetta':'Antonio',creditore=diff>0?'Antonio':'Concetta';
-    ds.innerHTML=`<div class="diff-row" style="font-weight:500"><span>Differenza</span><span style="color:${importo>0.01?'#993C1D':'#0F6E56'}">€${formatEur(importo)}</span></div>${importo>0.01?`<div class="diff-row"><span style="color:#888780">${debitore} deve a ${creditore}</span><span>€${formatEur(importo)}</span></div>`:'<div class="diff-row"><span style="color:#0F6E56">✓ Pari — nessun debito</span></div>'}`;
-  }else ds.innerHTML='<div class="empty" style="padding:6px 0">Nessuna spesa nel periodo</div>';
-
+  if(tA+tC>0){const debitore=diff>0?'Concetta':'Antonio',creditore=diff>0?'Antonio':'Concetta';ds.innerHTML=`<div class="diff-row" style="font-weight:500"><span>Differenza</span><span style="color:${importo>0.01?'#993C1D':'#0F6E56'}">€${formatEur(importo)}</span></div>${importo>0.01?`<div class="diff-row"><span style="color:#888780">${debitore} deve a ${creditore}</span><span>€${formatEur(importo)}</span></div>`:'<div class="diff-row"><span style="color:#0F6E56">✓ Pari</span></div>'}`;}
+  else ds.innerHTML='<div class="empty" style="padding:6px 0">Nessuna spesa nel periodo</div>';
   if(chartC){chartC.destroy();chartC=null;}
   const catsToShow=catFilter?[catFilter]:CATS;
-  const catA=catsToShow.map(c=>sA.filter(s=>s.cat===c).reduce((a,s)=>a+s.imp,0));
-  const catC2=catsToShow.map(c=>sC.filter(s=>s.cat===c).reduce((a,s)=>a+s.imp,0));
-  chartC=new Chart(document.getElementById('chartConfronto'),{
-    type:'bar',
-    data:{labels:catsToShow.map(c=>(CAT_EMOJI[c]||'')+' '+c),datasets:[{label:'Antonio',data:catA,backgroundColor:'#534AB7',borderRadius:4},{label:'Concetta',data:catC2,backgroundColor:'#9FE1CB',borderRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11},padding:10}}},scales:{x:{ticks:{font:{size:9},maxRotation:45,autoSkip:false}},y:{ticks:{callback:v=>'€'+v}}}}
-  });
+  chartC=new Chart(document.getElementById('chartConfronto'),{type:'bar',data:{labels:catsToShow.map(c=>(CAT_EMOJI[c]||'')+' '+c),datasets:[{label:'Antonio',data:catsToShow.map(c=>sA.filter(s=>s.cat===c).reduce((a,s)=>a+s.imp,0)),backgroundColor:'#534AB7',borderRadius:4},{label:'Concetta',data:catsToShow.map(c=>sC.filter(s=>s.cat===c).reduce((a,s)=>a+s.imp,0)),backgroundColor:'#9FE1CB',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11},padding:10}}},scales:{x:{ticks:{font:{size:9},maxRotation:45,autoSkip:false}},y:{ticks:{callback:v=>'€'+v}}}}});
 }
 
 // ---- LISTA DELLA SPESA ----
-function selectSpesaPerson(p){
-  spesaPerson=p;
-  document.getElementById('sp-antonio').classList.toggle('active',p==='Antonio');
-  document.getElementById('sp-concetta').classList.toggle('active',p==='Concetta');
+function selectSpesaPerson(p){spesaPerson=p;document.getElementById('sp-antonio').classList.toggle('active',p==='Antonio');document.getElementById('sp-concetta').classList.toggle('active',p==='Concetta');}
+
+async function ricaricaSpesa(){
+  document.getElementById('lista-spesa-items').innerHTML='<div class="empty"><span class="spinner"></span></div>';
+  try{
+    const data=await api({action:'read',foglio:'fg ACQUISTI'});
+    listaSpesa=(data.dati||[]).slice(1).filter(r=>r[0]).map(r=>({id:String(r[0]),text:r[1],qty:r[2]||'',persona:r[3],done:r[4]==='si'}));
+  }catch(e){toast('❌ Errore caricamento spesa');}
+  renderListaSpesa();
 }
 
-function aggiungiSpesaItem(){
+async function aggiungiSpesaItem(){
   const text=document.getElementById('spesa-item').value.trim();
   const qty=document.getElementById('spesa-qty').value.trim();
   if(!text){toast('⚠️ Inserisci cosa comprare');return;}
-  listaSpesa.push({id:Date.now(),text,qty,persona:spesaPerson,done:false});
-  saveListaSpesa();
-  document.getElementById('spesa-item').value='';
-  document.getElementById('spesa-qty').value='';
+  const id=String(Date.now());
+  try{
+    const res=await api({action:'add',foglio:'fg ACQUISTI',id,testo:text,qty,persona:spesaPerson});
+    if(res.errore) throw new Error();
+    listaSpesa.push({id,text,qty,persona:spesaPerson,done:false});
+    document.getElementById('spesa-item').value='';document.getElementById('spesa-qty').value='';
+    renderListaSpesa();toast('✓ Aggiunto alla lista');
+  }catch(e){toast('❌ Errore salvataggio');}
+}
+
+async function toggleSpesaItem(id){
+  const item=listaSpesa.find(i=>i.id===id);if(!item)return;
+  item.done=!item.done;
   renderListaSpesa();
-  toast('✓ Aggiunto alla lista');
+  await api({action:'update',foglio:'fg ACQUISTI',id,fatto:item.done?'si':'no'});
 }
 
-function toggleSpesaItem(id){
-  const item=listaSpesa.find(i=>i.id===id);
-  if(item) item.done=!item.done;
-  saveListaSpesa();renderListaSpesa();
+async function eliminaSpesaItem(id){
+  const ok=await conferma('Eliminare questo elemento dalla lista?');if(!ok)return;
+  listaSpesa=listaSpesa.filter(i=>i.id!==id);renderListaSpesa();
+  await api({action:'delete',foglio:'fg ACQUISTI',id});
+  toast('Elemento rimosso');
 }
 
-function eliminaSpesaItem(id){
-  listaSpesa=listaSpesa.filter(i=>i.id!==id);
-  saveListaSpesa();renderListaSpesa();
-}
-
-function pulisciAcquistati(){
-  listaSpesa=listaSpesa.filter(i=>!i.done);
-  saveListaSpesa();renderListaSpesa();
+async function pulisciAcquistati(){
+  const ok=await conferma('Rimuovere tutti gli elementi acquistati?');if(!ok)return;
+  const daRimuovere=listaSpesa.filter(i=>i.done);
+  listaSpesa=listaSpesa.filter(i=>!i.done);renderListaSpesa();
+  for(const i of daRimuovere) await api({action:'delete',foglio:'fg ACQUISTI',id:i.id});
   toast('✓ Acquistati rimossi');
 }
 
@@ -637,46 +644,59 @@ function renderListaSpesa(){
   const el=document.getElementById('lista-spesa-items');
   if(!listaSpesa.length){el.innerHTML='<div class="empty">Lista vuota</div>';return;}
   const sorted=[...listaSpesa].sort((a,b)=>a.done-b.done);
-  el.innerHTML=sorted.map(i=>`
-    <div class="todo-item">
-      <div class="todo-check ${i.done?'done':''}" onclick="toggleSpesaItem(${i.id})">${i.done?'✓':''}</div>
-      <div class="todo-info">
-        <div class="todo-text ${i.done?'done':''}">${esc(i.text)}${i.qty?' <span style="color:#888780;font-weight:400">('+esc(i.qty)+')</span>':''}</div>
-        <div class="todo-meta"><span class="badge ${i.persona==='Antonio'?'badge-ant':'badge-con'}">${i.persona}</span></div>
-      </div>
-      <button class="todo-del" onclick="eliminaSpesaItem(${i.id})"><i class="ti ti-trash"></i></button>
-    </div>`).join('');
+  el.innerHTML=sorted.map(i=>`<div class="todo-item">
+    <div class="todo-check ${i.done?'done':''}" onclick="toggleSpesaItem('${i.id}')">${i.done?'✓':''}</div>
+    <div class="todo-info">
+      <div class="todo-text ${i.done?'done':''}">${esc(i.text)}${i.qty?' <span style="color:#888780;font-weight:400">('+esc(i.qty)+')</span>':''}</div>
+      <div class="todo-meta"><span class="badge ${i.persona==='Antonio'?'badge-ant':'badge-con'}">${i.persona}</span></div>
+    </div>
+    <button class="todo-del" onclick="eliminaSpesaItem('${i.id}')"><i class="ti ti-trash"></i></button>
+  </div>`).join('');
 }
 
 // ---- COSE DA FARE ----
-function aggiungiTodo(){
+async function ricaricaTodo(){
+  document.getElementById('todo-items').innerHTML='<div class="empty"><span class="spinner"></span></div>';
+  try{
+    const data=await api({action:'read',foglio:'fg FARE'});
+    todoItems=(data.dati||[]).slice(1).filter(r=>r[0]).map(r=>({id:String(r[0]),text:r[1],date:r[2]||'',ora:r[3]||'',person:r[4]||'',done:r[5]==='si'}));
+  }catch(e){toast('❌ Errore caricamento attività');}
+  renderTodo();
+}
+
+async function aggiungiTodo(){
   const text=document.getElementById('todo-text').value.trim();
   const date=document.getElementById('todo-date').value;
+  const ora=document.getElementById('todo-ora').value;
   const person=document.getElementById('todo-person').value;
   if(!text){toast('⚠️ Inserisci cosa fare');return;}
-  todoItems.push({id:Date.now(),text,date,person,done:false});
-  saveTodo();
-  document.getElementById('todo-text').value='';
-  document.getElementById('todo-date').value='';
-  document.getElementById('todo-person').value='';
-  renderTodo();
-  toast('✓ Attività aggiunta');
+  const id=String(Date.now());
+  try{
+    const res=await api({action:'add',foglio:'fg FARE',id,testo:text,data:date,ora,persona:person});
+    if(res.errore) throw new Error();
+    todoItems.push({id,text,date,ora,person,done:false});
+    document.getElementById('todo-text').value='';document.getElementById('todo-date').value='';document.getElementById('todo-ora').value='';document.getElementById('todo-person').value='';
+    renderTodo();toast('✓ Attività aggiunta');
+  }catch(e){toast('❌ Errore salvataggio');}
 }
 
-function toggleTodo(id){
-  const item=todoItems.find(i=>i.id===id);
-  if(item) item.done=!item.done;
-  saveTodo();renderTodo();
+async function toggleTodo(id){
+  const item=todoItems.find(i=>i.id===id);if(!item)return;
+  item.done=!item.done;renderTodo();
+  await api({action:'update',foglio:'fg FARE',id,fatto:item.done?'si':'no'});
 }
 
-function eliminaTodo(id){
-  todoItems=todoItems.filter(i=>i.id!==id);
-  saveTodo();renderTodo();
+async function eliminaTodo(id){
+  const ok=await conferma('Eliminare questa attività?');if(!ok)return;
+  todoItems=todoItems.filter(i=>i.id!==id);renderTodo();
+  await api({action:'delete',foglio:'fg FARE',id});toast('Attività eliminata');
 }
 
-function pulisciTodoFatti(){
-  todoItems=todoItems.filter(i=>!i.done);
-  saveTodo();renderTodo();
+async function pulisciTodoFatti(){
+  const ok=await conferma('Rimuovere tutte le attività completate?');if(!ok)return;
+  const daRim=todoItems.filter(i=>i.done);
+  todoItems=todoItems.filter(i=>!i.done);renderTodo();
+  for(const i of daRim) await api({action:'delete',foglio:'fg FARE',id:i.id});
   toast('✓ Completate rimosse');
 }
 
@@ -684,29 +704,26 @@ function renderTodo(){
   const el=document.getElementById('todo-items');
   if(!todoItems.length){el.innerHTML='<div class="empty">Nessuna attività</div>';return;}
   const sorted=[...todoItems].sort((a,b)=>a.done-b.done||(a.date||'z').localeCompare(b.date||'z'));
-  el.innerHTML=sorted.map(i=>`
-    <div class="todo-item">
-      <div class="todo-check ${i.done?'done':''}" onclick="toggleTodo(${i.id})">${i.done?'✓':''}</div>
-      <div class="todo-info">
-        <div class="todo-text ${i.done?'done':''}">${esc(i.text)}</div>
-        <div class="todo-meta">
-          ${i.date?`<span>📅 ${i.date}</span> · `:''}
-          ${i.person?`<span class="badge ${i.person==='Antonio'?'badge-ant':'badge-con'}">${i.person}</span>`:'<span style="color:#b4b2a9">Chiunque</span>'}
-        </div>
+  el.innerHTML=sorted.map(i=>`<div class="todo-item">
+    <div class="todo-check ${i.done?'done':''}" onclick="toggleTodo('${i.id}')">${i.done?'✓':''}</div>
+    <div class="todo-info">
+      <div class="todo-text ${i.done?'done':''}">${esc(i.text)}</div>
+      <div class="todo-meta">
+        ${i.date?`<span>📅 ${i.date}${i.ora?' '+i.ora:''}</span>`:''}
+        ${i.person?`<span class="badge ${i.person==='Antonio'?'badge-ant':'badge-con'}">${i.person}</span>`:'<span style="color:#b4b2a9">Chiunque</span>'}
       </div>
-      <button class="todo-del" onclick="eliminaTodo(${i.id})"><i class="ti ti-trash"></i></button>
-    </div>`).join('');
+    </div>
+    <button class="todo-del" onclick="eliminaTodo('${i.id}')"><i class="ti ti-trash"></i></button>
+  </div>`).join('');
 }
 
 // ---- INIT ----
 document.getElementById('data').value=new Date().toISOString().split('T')[0];
-aggiornaGraficoLabel();
-aggiornaRiepilogoLabel();
+aggiornaGraficoLabel();aggiornaRiepilogoLabel();
 if(sessionStorage.getItem('auth')==='1'){
   PWD=sessionStorage.getItem('pwd')||'';
   document.getElementById('login-screen').style.display='none';
-  loadLocale();
-  caricaSpese();
+  caricaSpese().then(()=>renderLista());
 }
 </script>
 </body>
