@@ -598,7 +598,7 @@ function selectSpesaPerson(p){spesaPerson=p;document.getElementById('sp-antonio'
 async function ricaricaSpesa(){
   document.getElementById('lista-spesa-items').innerHTML='<div class="empty"><span class="spinner"></span></div>';
   try{
-    const data=await api({action:'read',foglio:'fg ACQUISTI'});
+    const data=await api({action:'read',foglio:'Acquisti'});
     listaSpesa=(data.dati||[]).slice(1).filter(r=>r[0]).map(r=>({id:String(r[0]),text:r[1],qty:r[2]||'',persona:r[3],done:r[4]==='si'}));
   }catch(e){toast('❌ Errore caricamento spesa');}
   renderListaSpesa();
@@ -610,7 +610,7 @@ async function aggiungiSpesaItem(){
   if(!text){toast('⚠️ Inserisci cosa comprare');return;}
   const id=String(Date.now());
   try{
-    const res=await api({action:'add',foglio:'fg ACQUISTI',id,testo:text,qty,persona:spesaPerson});
+    const res=await api({action:'add',foglio:'Acquisti',id,testo:text,qty,persona:spesaPerson});
     if(res.errore) throw new Error();
     listaSpesa.push({id,text,qty,persona:spesaPerson,done:false});
     document.getElementById('spesa-item').value='';document.getElementById('spesa-qty').value='';
@@ -622,7 +622,8 @@ async function toggleSpesaItem(id){
   const item=listaSpesa.find(i=>i.id===id);if(!item)return;
   item.done=!item.done;
   renderListaSpesa();
-  await api({action:'update',foglio:'fg ACQUISTI',id,fatto:item.done?'si':'no'});
+      await api({action:'update',foglio:'Acquisti',id,fatto:item.done?'si':'no'});
+
 }
 
 async function eliminaSpesaItem(id){
@@ -636,9 +637,10 @@ async function pulisciAcquistati(){
   const ok=await conferma('Rimuovere tutti gli elementi acquistati?');if(!ok)return;
   const daRimuovere=listaSpesa.filter(i=>i.done);
   listaSpesa=listaSpesa.filter(i=>!i.done);renderListaSpesa();
-  for(const i of daRimuovere) await api({action:'delete',foglio:'fg ACQUISTI',id:i.id});
+  for(const i of daRimuovere)     await api({action:'delete',foglio:'Acquisti',id:i.id});
   toast('✓ Acquistati rimossi');
 }
+
 
 function renderListaSpesa(){
   const el=document.getElementById('lista-spesa-items');
