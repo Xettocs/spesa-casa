@@ -629,7 +629,7 @@ async function toggleSpesaItem(id){
 async function eliminaSpesaItem(id){
   const ok=await conferma('Eliminare questo elemento dalla lista?');if(!ok)return;
   listaSpesa=listaSpesa.filter(i=>i.id!==id);renderListaSpesa();
-  await api({action:'delete',foglio:'fg ACQUISTI',id});
+      await api({action:'delete',foglio:'Acquisti',id});
   toast('Elemento rimosso');
 }
 
@@ -660,7 +660,7 @@ function renderListaSpesa(){
 async function ricaricaTodo(){
   document.getElementById('todo-items').innerHTML='<div class="empty"><span class="spinner"></span></div>';
   try{
-    const data=await api({action:'read',foglio:'fg FARE'});
+    const data=await api({action:'read',foglio:'Fare'});
     todoItems=(data.dati||[]).slice(1).filter(r=>r[0]).map(r=>({id:String(r[0]),text:r[1],date:r[2]||'',ora:r[3]||'',person:r[4]||'',done:r[5]==='si'}));
   }catch(e){toast('❌ Errore caricamento attività');}
   renderTodo();
@@ -674,7 +674,7 @@ async function aggiungiTodo(){
   if(!text){toast('⚠️ Inserisci cosa fare');return;}
   const id=String(Date.now());
   try{
-    const res=await api({action:'add',foglio:'fg FARE',id,testo:text,data:date,ora,persona:person});
+    const res=await api({action:'add',foglio:'Fare',id,testo:text,data:date,ora,persona:person});
     if(res.errore) throw new Error();
     todoItems.push({id,text,date,ora,person,done:false});
     document.getElementById('todo-text').value='';document.getElementById('todo-date').value='';document.getElementById('todo-ora').value='';document.getElementById('todo-person').value='';
@@ -685,20 +685,20 @@ async function aggiungiTodo(){
 async function toggleTodo(id){
   const item=todoItems.find(i=>i.id===id);if(!item)return;
   item.done=!item.done;renderTodo();
-  await api({action:'update',foglio:'fg FARE',id,fatto:item.done?'si':'no'});
+      await api({action:'update',foglio:'Fare',id,fatto:item.done?'si':'no'});
 }
 
 async function eliminaTodo(id){
   const ok=await conferma('Eliminare questa attività?');if(!ok)return;
   todoItems=todoItems.filter(i=>i.id!==id);renderTodo();
-  await api({action:'delete',foglio:'fg FARE',id});toast('Attività eliminata');
+      await api({action:'delete',foglio:'Fare',id});toast('Attività eliminata');
 }
 
 async function pulisciTodoFatti(){
   const ok=await conferma('Rimuovere tutte le attività completate?');if(!ok)return;
   const daRim=todoItems.filter(i=>i.done);
   todoItems=todoItems.filter(i=>!i.done);renderTodo();
-  for(const i of daRim) await api({action:'delete',foglio:'fg FARE',id:i.id});
+  for(const i of daRim) await api({action:'delete',foglio:'Fare',id:i.id});
   toast('✓ Completate rimosse');
 }
 
