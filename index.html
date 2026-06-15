@@ -546,6 +546,14 @@ function navGrafico(dir){if(graficoPeriod==='mensile')graficoCursor=new Date(gra
 function aggiornaGraficoLabel(){document.getElementById('grafico-periodo-label').textContent=graficoPeriod==='mensile'?graficoCursor.toLocaleDateString('it-IT',{month:'long',year:'numeric'}):graficoCursor.getFullYear();}
 function filtraPerPeriodo(arr,cursor,period){return arr.filter(s=>{const d=new Date(s.data);return period==='mensile'?d.getFullYear()===cursor.getFullYear()&&d.getMonth()===cursor.getMonth():d.getFullYear()===cursor.getFullYear();});}
 
+// Colore fisso per categoria — stesso colore in tutti i grafici
+const CAT_COLOR={
+  Abbonamenti:'#534AB7',Beauty:'#D4537E',Casa:'#1D9E75',
+  Farmacia:'#E74C3C',Regali:'#E67E22',Ristoranti:'#F1C40F',
+  Shopping:'#27AE60',Supermercati:'#378ADD',Trasporti:'#8E44AD',
+  Vacanza:'#16A085',Varie:'#888780'
+};
+
 function renderGrafici(){
   const catFilter=document.getElementById('grafico-cat-filter').value;
   const container=document.getElementById('grafici-container');
@@ -565,7 +573,9 @@ function renderGrafici(){
     const total=Object.values(t).reduce((a,b)=>a+b,0);
     const legend=document.getElementById('legend'+persona);
     if(!total){legend.innerHTML='<span style="color:#b4b2a9;font-size:12px">Nessuna spesa</span>';return;}
-    const labels=CATS.filter(c=>t[c]>0),vals=labels.map(c=>t[c]),colors=PALETTE.slice(0,labels.length);
+    const labels=CATS.filter(c=>t[c]>0);
+    const vals=labels.map(c=>t[c]);
+    const colors=labels.map(c=>CAT_COLOR[c]||'#888780');
     const ch=new Chart(document.getElementById('chart'+persona),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`€${formatEur(ctx.parsed)} (${((ctx.parsed/total)*100).toFixed(1)}%)`}}}}});
     if(i===0)chartA=ch;else chartB=ch;
     legend.innerHTML=labels.map((l,j)=>`<div class="legend-item"><div class="legend-dot" style="background:${colors[j]}"></div>${CAT_EMOJI[l]||''} ${l} €${formatEur(vals[j])}</div>`).join('');
