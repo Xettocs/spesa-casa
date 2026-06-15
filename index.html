@@ -110,7 +110,6 @@ select:focus,input:focus{border-color:#534AB7}
   </div>
 </div>
 
-<!-- Confirm dialog -->
 <div class="confirm-overlay" id="confirm-overlay" style="display:none">
   <div class="confirm-box">
     <p id="confirm-msg">Sei sicuro?</p>
@@ -137,7 +136,6 @@ select:focus,input:focus{border-color:#534AB7}
 
 <div class="content">
 
-<!-- AGGIUNGI -->
 <div class="section active" id="sec-aggiungi">
   <div class="card">
     <div class="card-title"><i class="ti ti-pencil"></i> Nuova spesa</div>
@@ -177,7 +175,6 @@ select:focus,input:focus{border-color:#534AB7}
   </div>
 </div>
 
-<!-- LISTA SPESE -->
 <div class="section" id="sec-lista">
   <div class="card" style="padding:12px 14px">
     <div class="person-toggle">
@@ -224,7 +221,6 @@ select:focus,input:focus{border-color:#534AB7}
   </div>
 </div>
 
-<!-- GRAFICI -->
 <div class="section" id="sec-grafici">
   <div class="card">
     <div class="card-title"><i class="ti ti-sliders"></i> Filtri</div>
@@ -256,7 +252,6 @@ select:focus,input:focus{border-color:#534AB7}
   <div id="grafici-container"></div>
 </div>
 
-<!-- RIEPILOGO -->
 <div class="section" id="sec-riepilogo">
   <div class="card">
     <div class="card-title"><i class="ti ti-calculator"></i> Filtri</div>
@@ -298,7 +293,6 @@ select:focus,input:focus{border-color:#534AB7}
   </div>
 </div>
 
-<!-- LISTA DELLA SPESA -->
 <div class="section" id="sec-spesa">
   <div class="card">
     <div class="card-title"><i class="ti ti-shopping-cart"></i> Aggiungi alla lista</div>
@@ -322,7 +316,6 @@ select:focus,input:focus{border-color:#534AB7}
   </div>
 </div>
 
-<!-- COSE DA FARE -->
 <div class="section" id="sec-todo">
   <div class="card">
     <div class="card-title"><i class="ti ti-pencil"></i> Nuova attività</div>
@@ -358,7 +351,14 @@ const WEBAPP_URL='https://script.google.com/macros/s/AKfycbwKSxYq9rWwgN81y-_nlqn
 const CATS=['Abbonamenti','Beauty','Casa','Farmacia','Regali','Ristoranti','Shopping','Supermercati','Trasporti','Vacanza','Varie'];
 const CAT_EMOJI={Abbonamenti:'📱',Beauty:'💄',Casa:'🏠',Farmacia:'💊',Regali:'🎁',Ristoranti:'🍽️',Shopping:'🛍️',Supermercati:'🛒',Trasporti:'🚗',Vacanza:'✈️',Varie:'📦'};
 const CAT_BG={Abbonamenti:'#EDE9FB',Beauty:'#FBEAF0',Casa:'#E1F5EE',Farmacia:'#FCEBEB',Regali:'#FFF3E0',Ristoranti:'#FFF8E1',Shopping:'#E8F5E9',Supermercati:'#EEEDFE',Trasporti:'#E6F1FB',Vacanza:'#EAF3DE',Varie:'#F1EFE8'};
-const PALETTE=['#534AB7','#1D9E75','#EF9F27','#378ADD','#D4537E','#639922','#888780','#E67E22','#8E44AD','#16A085','#C0392B'];
+
+// Colore fisso per categoria — lo stesso colore in tutti i grafici
+const CAT_COLOR={
+  Abbonamenti:'#534AB7',Beauty:'#D4537E',Casa:'#1D9E75',
+  Farmacia:'#E74C3C',Regali:'#E67E22',Ristoranti:'#F1C40F',
+  Shopping:'#27AE60',Supermercati:'#378ADD',Trasporti:'#8E44AD',
+  Vacanza:'#16A085',Varie:'#888780'
+};
 
 let PWD='', selectedPerson='Antonio', spesaPerson='Antonio', listaFiltro='Tutti';
 let spese=[], listaSpesa=[], todoItems=[];
@@ -417,8 +417,42 @@ function parseImporto(val){
   return parseFloat(s)||0;
 }
 function formatEur(val){return parseFloat(val).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+// Funzione di formattazione unica per ripulire e convertire le date in gg/mm/aaaa ed eventualmente aggiungere l'ora
+function formattaDataOra(strData, strOra) {
+  if (!strData) return '';
+  let dataPulita = String(strData).trim();
+  
+  // Se la stringa contiene la T (formato ISO tipo 2026-06-08T22:00:00.000Z), prendiamo solo la parte della data aaaa-mm-gg
+  if (dataPulita.includes('T')) {
+    dataPulita = dataPulita.split('T')[0];
+  }
+  
+  // Se è nel formato aaaa-mm-gg, lo giriamo in gg/mm/aaaa
+  if (dataPulita.includes('-')) {
+    const parti = dataPulita.split('-');
+    if (parti.length === 3) {
+      dataPulita = `${parti[2].substring(0,2)}/${parti[1]}/${parti[0]}`;
+    }
+  }
+  
+  // Gestione dell'orario pulito hh:mm
+  if (strOra) {
+    let oraPulita = String(strOra).trim();
+    if (oraPulita.includes('T')) {
+      const partiT = oraPulita.split('T');
+      if (partiT.length > 1) oraPulita = partiT[1].substring(0,5);
+    } else {
+      oraPulita = oraPulita.substring(0,5);
+    }
+    return `${dataPulita}, ore ${oraPulita}`;
+  }
+  
+  return dataPulita;
+}
+
 function parseSpese(rows){
-  spese=rows.slice(1).filter(r=>r[0]).map(row=>({
+  spese = rows.slice(1).filter(r=>r[0]).map(row=>({
     id:String(row[0]),persona:row[1],cat:row[2],desc:row[3],
     imp:parseImporto(row[4]),data:row[5],pag:row[6],note:row[7]||''
   }));
@@ -515,11 +549,13 @@ function renderLista(){
   if(!filtered.length){el.innerHTML='<div class="empty">Nessuna spesa</div>';return;}
   el.innerHTML=filtered.map(s=>{
     const puoElim=s.persona===selectedPerson;
+    // Applicazione della formattazione pulita della data (gg/mm/aaaa)
+    const dataVisualizzata = formattaDataOra(s.data, null);
     return`<div class="entry">
       <div class="entry-cat" style="background:${CAT_BG[s.cat]||'#f1efe8'}">${CAT_EMOJI[s.cat]||'📦'}</div>
       <div class="entry-info">
         <div class="desc">${esc(s.desc)}</div>
-        <div class="meta">${s.data} · <span class="badge ${s.persona==='Antonio'?'badge-ant':'badge-con'}">${s.persona}</span> · ${s.cat} · ${s.pag}</div>
+        <div class="meta">${dataVisualizzata} · <span class="badge ${s.persona==='Antonio'?'badge-ant':'badge-con'}">${s.persona}</span> · ${s.cat} · ${s.pag}</div>
       </div>
       <div class="entry-amount">€${formatEur(s.imp)}</div>
       <button class="entry-del ${puoElim?'':'disabled'}" onclick="${puoElim?`eliminaSpesa('${s.id}')`:''}" title="${puoElim?'Elimina':'Solo '+s.persona+' può eliminare'}"><i class="ti ti-trash"></i></button>
@@ -546,14 +582,6 @@ function navGrafico(dir){if(graficoPeriod==='mensile')graficoCursor=new Date(gra
 function aggiornaGraficoLabel(){document.getElementById('grafico-periodo-label').textContent=graficoPeriod==='mensile'?graficoCursor.toLocaleDateString('it-IT',{month:'long',year:'numeric'}):graficoCursor.getFullYear();}
 function filtraPerPeriodo(arr,cursor,period){return arr.filter(s=>{const d=new Date(s.data);return period==='mensile'?d.getFullYear()===cursor.getFullYear()&&d.getMonth()===cursor.getMonth():d.getFullYear()===cursor.getFullYear();});}
 
-// Colore fisso per categoria — stesso colore in tutti i grafici
-const CAT_COLOR={
-  Abbonamenti:'#534AB7',Beauty:'#D4537E',Casa:'#1D9E75',
-  Farmacia:'#E74C3C',Regali:'#E67E22',Ristoranti:'#F1C40F',
-  Shopping:'#27AE60',Supermercati:'#378ADD',Trasporti:'#8E44AD',
-  Vacanza:'#16A085',Varie:'#888780'
-};
-
 function renderGrafici(){
   const catFilter=document.getElementById('grafico-cat-filter').value;
   const container=document.getElementById('grafici-container');
@@ -567,18 +595,24 @@ function renderGrafici(){
     return;
   }
   container.innerHTML=`<div class="card"><div class="card-title"><span class="badge badge-ant">Antonio</span></div><div class="chart-wrap"><canvas id="chartAntonio"></canvas></div><div class="legend-wrap" id="legendAntonio"></div></div><div class="card"><div class="card-title"><span class="badge badge-con">Concetta</span></div><div class="chart-wrap"><canvas id="chartConcetta"></canvas></div><div class="legend-wrap" id="legendConcetta"></div></div>`;
+  
   ['Antonio','Concetta'].forEach((persona,i)=>{
     const filtered=filtraPerPeriodo(spese,graficoCursor,graficoPeriod).filter(s=>s.persona===persona);
     const t={};CATS.forEach(c=>t[c]=0);filtered.forEach(s=>t[s.cat]=(t[s.cat]||0)+s.imp);
     const total=Object.values(t).reduce((a,b)=>a+b,0);
     const legend=document.getElementById('legend'+persona);
     if(!total){legend.innerHTML='<span style="color:#b4b2a9;font-size:12px">Nessuna spesa</span>';return;}
-    const labels=CATS.filter(c=>t[c]>0);
+    
+    // Mostriamo nel grafico TUTTE le categorie configurate per mantenere l'allineamento dei colori fisso
+    const labels=CATS;
     const vals=labels.map(c=>t[c]);
     const colors=labels.map(c=>CAT_COLOR[c]||'#888780');
+    
     const ch=new Chart(document.getElementById('chart'+persona),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`€${formatEur(ctx.parsed)} (${((ctx.parsed/total)*100).toFixed(1)}%)`}}}}});
     if(i===0)chartA=ch;else chartB=ch;
-    legend.innerHTML=labels.map((l,j)=>`<div class="legend-item"><div class="legend-dot" style="background:${colors[j]}"></div>${CAT_EMOJI[l]||''} ${l} €${formatEur(vals[j])}</div>`).join('');
+    
+    // Per l'elenco testuale sottostante, mostriamo solo quelle con importo maggiore di zero per non ingolfare lo schermo
+    legend.innerHTML=labels.map((l,j)=>vals[j]>0?`<div class="legend-item"><div class="legend-dot" style="background:${colors[j]}"></div>${CAT_EMOJI[l]||''} ${l} €${formatEur(vals[j])}</div>`:'').join('');
   });
 }
 
@@ -636,14 +670,13 @@ async function toggleSpesaItem(id){
   const item=listaSpesa.find(i=>i.id===id);if(!item)return;
   item.done=!item.done;
   renderListaSpesa();
-      await api({action:'update',foglio:'Acquisti',id,fatto:item.done?'si':'no'});
-
+  await api({action:'update',foglio:'Acquisti',id,fatto:item.done?'si':'no'});
 }
 
 async function eliminaSpesaItem(id){
   const ok=await conferma('Eliminare questo elemento dalla lista?');if(!ok)return;
   listaSpesa=listaSpesa.filter(i=>i.id!==id);renderListaSpesa();
-      await api({action:'delete',foglio:'Acquisti',id});
+  await api({action:'delete',foglio:'Acquisti',id});
   toast('Elemento rimosso');
 }
 
@@ -651,10 +684,9 @@ async function pulisciAcquistati(){
   const ok=await conferma('Rimuovere tutti gli elementi acquistati?');if(!ok)return;
   const daRimuovere=listaSpesa.filter(i=>i.done);
   listaSpesa=listaSpesa.filter(i=>!i.done);renderListaSpesa();
-  for(const i of daRimuovere)     await api({action:'delete',foglio:'Acquisti',id:i.id});
+  for(const i of daRimuovere) await api({action:'delete',foglio:'Acquisti',id:i.id});
   toast('✓ Acquistati rimossi');
 }
-
 
 function renderListaSpesa(){
   const el=document.getElementById('lista-spesa-items');
@@ -699,13 +731,13 @@ async function aggiungiTodo(){
 async function toggleTodo(id){
   const item=todoItems.find(i=>i.id===id);if(!item)return;
   item.done=!item.done;renderTodo();
-      await api({action:'update',foglio:'Fare',id,fatto:item.done?'si':'no'});
+  await api({action:'update',foglio:'Fare',id,fatto:item.done?'si':'no'});
 }
 
 async function eliminaTodo(id){
   const ok=await conferma('Eliminare questa attività?');if(!ok)return;
   todoItems=todoItems.filter(i=>i.id!==id);renderTodo();
-      await api({action:'delete',foglio:'Fare',id});toast('Attività eliminata');
+  await api({action:'delete',foglio:'Fare',id});toast('Attività eliminata');
 }
 
 async function pulisciTodoFatti(){
@@ -720,17 +752,21 @@ function renderTodo(){
   const el=document.getElementById('todo-items');
   if(!todoItems.length){el.innerHTML='<div class="empty">Nessuna attività</div>';return;}
   const sorted=[...todoItems].sort((a,b)=>a.done-b.done||(a.date||'z').localeCompare(b.date||'z'));
-  el.innerHTML=sorted.map(i=>`<div class="todo-item">
+  el.innerHTML=sorted.map(i=> {
+    // Formattazione della scadenza dell'attività in gg/mm/aaaa, ore hh:mm puliti
+    const scadenzaVisualizzata = i.date ? formattaDataOra(i.date, i.ora) : '';
+    return `<div class="todo-item">
     <div class="todo-check ${i.done?'done':''}" onclick="toggleTodo('${i.id}')">${i.done?'✓':''}</div>
     <div class="todo-info">
       <div class="todo-text ${i.done?'done':''}">${esc(i.text)}</div>
       <div class="todo-meta">
-        ${i.date?`<span>📅 ${i.date}${i.ora?' '+i.ora:''}</span>`:''}
+        ${scadenzaVisualizzata ? `<span>📅 ${scadenzaVisualizzata}</span> · ` : ''}
         ${i.person?`<span class="badge ${i.person==='Antonio'?'badge-ant':'badge-con'}">${i.person}</span>`:'<span style="color:#b4b2a9">Chiunque</span>'}
       </div>
     </div>
     <button class="todo-del" onclick="eliminaTodo('${i.id}')"><i class="ti ti-trash"></i></button>
-  </div>`).join('');
+  </div>`;
+  }).join('');
 }
 
 // ---- INIT ----
