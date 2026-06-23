@@ -602,13 +602,13 @@ function renderFlagBtn(s,puoModificare){
   if(puoModificare){
     if(s.statoSeg==='attesa'){
       // qualcuno mi ha segnalato un errore: clicco per leggere il messaggio
-      return `<button class="entry-flag active-attesa" onclick="vediSegnalazione('${s.id}')" title="Hai una segnalazione da leggere">🚩</button>`;
+      return `<button class="entry-flag active-attesa" onclick="vediSegnalazione('${s.id}')" title="Hai una segnalazione da leggere">⚠️</button>`;
     }
     if(s.statoSeg==='modificata'){
       // ho già corretto, in attesa che il segnalante controlli - disabilitata per me
-      return `<button class="entry-flag disabled" title="In attesa di verifica">🚩</button>`;
+      return `<button class="entry-flag disabled" title="In attesa di verifica">⚠️</button>`;
     }
-    return `<button class="entry-flag disabled" title="Non puoi segnalare una tua spesa">⚠️</button>`;
+    return `<button class="entry-flag disabled" title="Non puoi segnalare una tua spesa">🏳️</button>`;
   } else {
     if(s.statoSeg==='modificata'){
       // il proprietario ha corretto: il segnalante controlla
@@ -616,9 +616,9 @@ function renderFlagBtn(s,puoModificare){
     }
     if(s.statoSeg==='attesa'){
       // ho già segnalato, in attesa che l'altro corregga
-      return `<button class="entry-flag disabled" title="Segnalazione in attesa di correzione da ${s.persona}">🚩</button>`;
+      return `<button class="entry-flag disabled" title="Segnalazione in attesa di correzione da ${s.persona}">⚠️</button>`;
     }
-    return `<button class="entry-flag" onclick="segnalaErrore('${s.id}')" title="Segnala errore a ${s.persona}">⚠️</button>`;
+    return `<button class="entry-flag" onclick="segnalaErrore('${s.id}')" title="Segnala errore a ${s.persona}">🏳️</button>`;
   }
 }
 
@@ -626,7 +626,7 @@ function vediSegnalazione(id){
   const s=spese.find(x=>x.id===id);
   if(!s) return;
   apriEdit(`
-    <h3>🚩 Segnalazione ricevuta</h3>
+    <h3>⚠️ Segnalazione ricevuta</h3>
     <p style="font-size:13px;color:#888780;margin-bottom:10px">Spesa: <strong>${esc(s.desc)}</strong> · €${formatEur(s.imp)} · ${formatDataIt(s.data)}</p>
     <p style="font-size:14px;background:#FFF3E0;padding:12px;border-radius:8px;line-height:1.5">${esc(s.segnalazione)}</p>
     <div class="edit-btns">
@@ -666,7 +666,7 @@ async function segnalaErrore(id){
   const s=spese.find(x=>x.id===id);
   if(!s) return;
   apriEdit(`
-    <h3>⚠️ Segnala errore a ${s.persona}</h3>
+    <h3>🏳️ Segnala errore a ${s.persona}</h3>
     <p style="font-size:13px;color:#888780;margin-bottom:10px">Spesa: <strong>${esc(s.desc)}</strong> · €${formatEur(s.imp)} · ${formatDataIt(s.data)}</p>
     <label>Cosa correggere</label>
     <input type="text" id="seg-text" value="Correggere spesa &quot;${esc(s.desc)}&quot; (€${formatEur(s.imp)} del ${formatDataIt(s.data)})">
