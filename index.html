@@ -88,6 +88,7 @@ select:focus,input:focus{border-color:#534AB7}
 .todo-del{background:none;border:none;color:#b4b2a9;cursor:pointer;font-size:14px;padding:3px;flex-shrink:0}
 .entry-edit{background:none;border:none;color:#888780;cursor:pointer;font-size:14px;padding:4px;flex-shrink:0}
 .entry-edit.disabled{opacity:.3;cursor:not-allowed}
+.entry-flag{background:none;border:none;color:#E67E22;cursor:pointer;font-size:15px;padding:4px;flex-shrink:0}
 .todo-edit{background:none;border:none;color:#888780;cursor:pointer;font-size:13px;padding:3px;flex-shrink:0}
 /* Edit dialog */
 .edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -585,9 +586,41 @@ function renderLista(){
       </div>
       <div class="entry-amount">€${formatEur(s.imp)}</div>
       <button class="entry-edit ${puoModificare?'':'disabled'}" onclick="${puoModificare?`apriEditSpesa('${s.id}')`:''}" title="${puoModificare?'Modifica':'Solo '+s.persona+' può modificare'}"><i class="ti ti-pencil"></i></button>
+      ${puoModificare?'':`<button class="entry-flag" onclick="segnalaErrore('${s.id}')" title="Segnala errore a ${s.persona}"><i class="ti ti-flag-3"></i></button>`}
       <button class="entry-del ${puoModificare?'':'disabled'}" onclick="${puoModificare?`eliminaSpesa('${s.id}')`:''}" title="${puoModificare?'Elimina':'Solo '+s.persona+' può eliminare'}"><i class="ti ti-trash"></i></button>
     </div>`;
   }).join('');
+}
+
+async function segnalaErrore(id){
+  const s=spese.find(x=>x.id===id);
+  if(!s) return;
+  apriEdit(`
+    <h3><i class="ti ti-flag-3"></i> Segnala errore a ${s.persona}</h3>
+    <p style="font-size:13px;color:#888780;margin-bottom:10px">Spesa: <strong>${esc(s.desc)}</strong> · €${formatEur(s.imp)} · ${formatDataIt(s.data)}</p>
+    <label>Cosa correggere</label>
+    <input type="text" id="seg-text" value="Correggere spesa &quot;${esc(s.desc)}&quot; (€${formatEur(s.imp)} del ${formatDataIt(s.data)})">
+    <label>Entro il (opzionale)</label>
+    <input type="date" id="seg-date">
+    <div class="edit-btns">
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+      <button type="button" class="edit-save" onclick="confermaSegnalazione('${s.persona}')">Invia segnalazione</button>
+    </div>
+  `);
+}
+
+async function confermaSegnalazione(personaDestinatario){
+  const text=document.getElementById('seg-text').value.trim();
+  const date=document.getElementById('seg-date').value;
+  if(!text){toast('⚠️ Inserisci il messaggio');return;}
+  chiudiEdit();
+  const id=String(Date.now());
+  try{
+    const res=await api({action:'add',foglio:'Fare',id,testo:'⚠️ '+text,data:date,ora:'',persona:personaDestinatario});
+    if(res.errore) throw new Error();
+    todoItems.push({id,text:'⚠️ '+text,date,ora:'',person:personaDestinatario,done:false});
+    toast('✓ Segnalazione inviata a '+personaDestinatario);
+  }catch(e){toast('❌ Errore invio segnalazione');}
 }
 
 function apriEditSpesa(id){
