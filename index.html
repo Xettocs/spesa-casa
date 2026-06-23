@@ -90,6 +90,9 @@ select:focus,input:focus{border-color:#534AB7}
 .entry-edit.disabled{opacity:.3;cursor:not-allowed}
 .entry-flag{background:none;border:none;color:#E67E22;cursor:pointer;font-size:14px;padding:4px;flex-shrink:0}
 .entry-flag.disabled{opacity:.25;cursor:not-allowed;color:#b4b2a9}
+.entry-flag.active-attesa{animation:pulse 1.5s infinite}
+.entry-flag.active-modificata{animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .todo-edit{background:none;border:none;color:#888780;cursor:pointer;font-size:13px;padding:3px;flex-shrink:0}
 /* Edit dialog */
 .edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -483,7 +486,8 @@ function soloData(val){
 function parseSpese(rows){
   spese=rows.slice(1).filter(r=>r[0]).map(row=>({
     id:String(row[0]),persona:row[1],cat:row[2],desc:row[3],
-    imp:parseImporto(row[4]),data:row[5],pag:row[6],note:row[7]||''
+    imp:parseImporto(row[4]),data:row[5],pag:row[6],note:row[7]||'',
+    segnalazione:row[8]||'',statoSeg:row[9]||''
   }));
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -587,40 +591,103 @@ function renderLista(){
       </div>
       <div class="entry-amount">€${formatEur(s.imp)}</div>
       <button class="entry-edit ${puoModificare?'':'disabled'}" onclick="${puoModificare?`apriEditSpesa('${s.id}')`:''}" title="${puoModificare?'Modifica':'Solo '+s.persona+' può modificare'}"><i class="ti ti-pencil"></i></button>
-      <button class="entry-flag ${puoModificare?'disabled':''}" onclick="${puoModificare?'':`segnalaErrore('${s.id}')`}" title="${puoModificare?'Non puoi segnalare una tua spesa':'Segnala errore a '+s.persona}">⚠️</button>
+      ${renderFlagBtn(s,puoModificare)}
       <button class="entry-del ${puoModificare?'':'disabled'}" onclick="${puoModificare?`eliminaSpesa('${s.id}')`:''}" title="${puoModificare?'Elimina':'Solo '+s.persona+' può eliminare'}"><i class="ti ti-trash"></i></button>
     </div>`;
   }).join('');
+}
+
+function renderFlagBtn(s,puoModificare){
+  // puoModificare = true significa che è una spesa MIA
+  if(puoModificare){
+    if(s.statoSeg==='attesa'){
+      // qualcuno mi ha segnalato un errore: clicco per leggere il messaggio
+      return `<button class="entry-flag active-attesa" onclick="vediSegnalazione('${s.id}')" title="Hai una segnalazione da leggere">🚩</button>`;
+    }
+    if(s.statoSeg==='modificata'){
+      // ho già corretto, in attesa che il segnalante controlli - disabilitata per me
+      return `<button class="entry-flag disabled" title="In attesa di verifica">🚩</button>`;
+    }
+    return `<button class="entry-flag disabled" title="Non puoi segnalare una tua spesa">⚠️</button>`;
+  } else {
+    if(s.statoSeg==='modificata'){
+      // il proprietario ha corretto: il segnalante controlla
+      return `<button class="entry-flag active-modificata" onclick="vediCorrezione('${s.id}')" title="${s.persona} ha modificato — verifica">🚩❗</button>`;
+    }
+    if(s.statoSeg==='attesa'){
+      // ho già segnalato, in attesa che l'altro corregga
+      return `<button class="entry-flag disabled" title="Segnalazione in attesa di correzione da ${s.persona}">🚩</button>`;
+    }
+    return `<button class="entry-flag" onclick="segnalaErrore('${s.id}')" title="Segnala errore a ${s.persona}">⚠️</button>`;
+  }
+}
+
+function vediSegnalazione(id){
+  const s=spese.find(x=>x.id===id);
+  if(!s) return;
+  apriEdit(`
+    <h3>🚩 Segnalazione ricevuta</h3>
+    <p style="font-size:13px;color:#888780;margin-bottom:10px">Spesa: <strong>${esc(s.desc)}</strong> · €${formatEur(s.imp)} · ${formatDataIt(s.data)}</p>
+    <p style="font-size:14px;background:#FFF3E0;padding:12px;border-radius:8px;line-height:1.5">${esc(s.segnalazione)}</p>
+    <div class="edit-btns">
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Chiudi</button>
+      <button type="button" class="edit-save" onclick="chiudiEdit();apriEditSpesa('${id}')">Vai a modifica</button>
+    </div>
+  `);
+}
+
+async function vediCorrezione(id){
+  const s=spese.find(x=>x.id===id);
+  if(!s) return;
+  apriEdit(`
+    <h3>🚩❗ Verifica correzione</h3>
+    <p style="font-size:13px;color:#888780;margin-bottom:10px">Spesa: <strong>${esc(s.desc)}</strong> · €${formatEur(s.imp)} · ${formatDataIt(s.data)}</p>
+    <label style="margin-top:0">Il tuo messaggio originale:</label>
+    <p style="font-size:14px;background:#f5f4f0;padding:12px;border-radius:8px;line-height:1.5">${esc(s.segnalazione)}</p>
+    <p style="font-size:13px;color:#1D9E75;margin-top:10px">✓ ${s.persona} ha apportato modifiche a questa spesa.</p>
+    <div class="edit-btns">
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Chiudi senza confermare</button>
+      <button type="button" class="edit-save" onclick="confermaVerifica('${id}')">Ho verificato, chiudi</button>
+    </div>
+  `);
+}
+
+async function confermaVerifica(id){
+  chiudiEdit();
+  try{
+    await api({action:'update',foglio:'Spese',id,campo:'chiudisegnalazione'});
+    const s=spese.find(x=>x.id===id);
+    if(s){s.segnalazione='';s.statoSeg='';}
+    renderLista();toast('✓ Verifica completata');
+  }catch(e){toast('❌ Errore');}
 }
 
 async function segnalaErrore(id){
   const s=spese.find(x=>x.id===id);
   if(!s) return;
   apriEdit(`
-    <h3><i class="ti ti-flag-3"></i> Segnala errore a ${s.persona}</h3>
+    <h3>⚠️ Segnala errore a ${s.persona}</h3>
     <p style="font-size:13px;color:#888780;margin-bottom:10px">Spesa: <strong>${esc(s.desc)}</strong> · €${formatEur(s.imp)} · ${formatDataIt(s.data)}</p>
     <label>Cosa correggere</label>
     <input type="text" id="seg-text" value="Correggere spesa &quot;${esc(s.desc)}&quot; (€${formatEur(s.imp)} del ${formatDataIt(s.data)})">
-    <label>Entro il (opzionale)</label>
-    <input type="date" id="seg-date">
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
-      <button type="button" class="edit-save" onclick="confermaSegnalazione('${s.persona}')">Invia segnalazione</button>
+      <button type="button" class="edit-save" onclick="confermaSegnalazione('${id}')">Invia segnalazione</button>
     </div>
   `);
 }
 
-async function confermaSegnalazione(personaDestinatario){
+async function confermaSegnalazione(id){
   const text=document.getElementById('seg-text').value.trim();
-  const date=document.getElementById('seg-date').value;
   if(!text){toast('⚠️ Inserisci il messaggio');return;}
   chiudiEdit();
-  const id=String(Date.now());
   try{
-    const res=await api({action:'add',foglio:'Fare',id,testo:'⚠️ '+text,data:date,ora:'',persona:personaDestinatario});
+    const res=await api({action:'update',foglio:'Spese',id,campo:'segnalazione',testo:text});
     if(res.errore) throw new Error();
-    todoItems.push({id,text:'⚠️ '+text,date,ora:'',person:personaDestinatario,done:false});
-    toast('✓ Segnalazione inviata a '+personaDestinatario);
+    const s=spese.find(x=>x.id===id);
+    if(s){s.segnalazione=text;s.statoSeg='attesa';}
+    renderLista();
+    toast('✓ Segnalazione inviata');
   }catch(e){toast('❌ Errore invio segnalazione');}
 }
 
