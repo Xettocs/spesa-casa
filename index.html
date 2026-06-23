@@ -98,7 +98,7 @@ select:focus,input:focus{border-color:#534AB7}
 .edit-save{background:#534AB7;color:#fff}
 .edit-cancel{background:#f5f4f0;color:#1a1a18}
 /* Confirm dialog */
-.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px}
 .confirm-box{background:#fff;border-radius:14px;padding:22px;max-width:300px;width:100%;text-align:center}
 .confirm-box p{font-size:14px;margin-bottom:16px;color:#1a1a18;line-height:1.5}
 .confirm-btns{display:flex;gap:10px}
@@ -597,8 +597,8 @@ function apriEditSpesa(id){
     <label>Note</label>
     <input type="text" id="ed-note" value="${esc(s.note||'')}">
     <div class="edit-btns">
-      <button class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
-      <button class="edit-save" onclick="salvaEditSpesa('${id}')">Salva modifiche</button>
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+      <button type="button" class="edit-save" onclick="salvaEditSpesa('${id}')">Salva modifiche</button>
     </div>
   `);
 }
@@ -784,8 +784,8 @@ function apriEditSpesaItem(id){
       <option value="Concetta" ${i.persona==='Concetta'?'selected':''}>Concetta</option>
     </select>
     <div class="edit-btns">
-      <button class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
-      <button class="edit-save" onclick="salvaEditSpesaItem('${id}')">Salva modifiche</button>
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+      <button type="button" class="edit-save" onclick="salvaEditSpesaItem('${id}')">Salva modifiche</button>
     </div>
   `);
 }
@@ -890,8 +890,8 @@ function apriEditTodo(id){
       <option value="Concetta" ${i.person==='Concetta'?'selected':''}>Concetta</option>
     </select>
     <div class="edit-btns">
-      <button class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
-      <button class="edit-save" onclick="salvaEditTodo('${id}')">Salva modifiche</button>
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+      <button type="button" class="edit-save" onclick="salvaEditTodo('${id}')">Salva modifiche</button>
     </div>
   `);
 }
