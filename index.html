@@ -115,7 +115,12 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <label style="text-align:left">Password</label>
+    <label style="text-align:left">Chi sei?</label>
+    <div class="person-toggle">
+      <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
+      <div class="ptab" id="login-concetta" onclick="selectLoginPerson('Concetta')">Concetta</div>
+    </div>
+    <label>Password</label>
     <input type="password" id="pwd-input" placeholder="Inserisci la password" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn" onclick="doLogin()" id="btn-login"><i class="ti ti-lock-open"></i> Accedi</button>
     <div class="login-err" id="login-err"></div>
@@ -378,6 +383,7 @@ const CAT_BG={Abbonamenti:'#EDE9FB',Beauty:'#FBEAF0',Casa:'#E1F5EE',Farmacia:'#F
 const PALETTE=['#534AB7','#1D9E75','#EF9F27','#378ADD','#D4537E','#639922','#888780','#E67E22','#8E44AD','#16A085','#C0392B'];
 
 let PWD='', selectedPerson='Antonio', spesaPerson='Antonio', listaFiltro='Tutti';
+let currentUser='Antonio';
 let spese=[], listaSpesa=[], todoItems=[];
 let chartA=null,chartB=null,chartC=null,chartCat=null;
 let graficoPeriod='mensile',graficoCursor=new Date();
@@ -412,6 +418,12 @@ function chiudiEdit(){
 }
 
 // ---- LOGIN ----
+function selectLoginPerson(p){
+  currentUser=p;
+  document.getElementById('login-antonio').classList.toggle('active',p==='Antonio');
+  document.getElementById('login-concetta').classList.toggle('active',p==='Concetta');
+}
+
 async function doLogin(){
   const val=document.getElementById('pwd-input').value.trim();
   if(!val){document.getElementById('login-err').textContent='Inserisci la password';return;}
@@ -426,7 +438,9 @@ async function doLogin(){
     }else{
       PWD=val;
       document.getElementById('login-screen').style.display='none';
-      sessionStorage.setItem('auth','1');sessionStorage.setItem('pwd',val);
+      sessionStorage.setItem('auth','1');sessionStorage.setItem('pwd',val);sessionStorage.setItem('user',currentUser);
+      selectPerson(currentUser);
+      selectSpesaPerson(currentUser);
       parseSpese(data.dati||[]);
       popolaAnni();
     }
@@ -497,6 +511,7 @@ function switchTab(name){
 }
 
 // ---- SPESE ----
+function selectSpesaPerson(p){spesaPerson=p;document.getElementById('sp-antonio').classList.toggle('active',p==='Antonio');document.getElementById('sp-concetta').classList.toggle('active',p==='Concetta');}
 function selectPerson(p){
   selectedPerson=p;
   ['antonio','concetta'].forEach(x=>document.getElementById('pt-'+x).classList.toggle('active',p.toLowerCase()===x));
@@ -561,7 +576,7 @@ function renderLista(){
   filtered.sort((a,b)=>String(b.data).localeCompare(String(a.data)));
   if(!filtered.length){el.innerHTML='<div class="empty">Nessuna spesa</div>';return;}
   el.innerHTML=filtered.map(s=>{
-    const puoModificare=s.persona===selectedPerson;
+    const puoModificare=s.persona===currentUser;
     return`<div class="entry">
       <div class="entry-cat" style="background:${CAT_BG[s.cat]||'#f1efe8'}">${CAT_EMOJI[s.cat]||'📦'}</div>
       <div class="entry-info">
@@ -581,6 +596,11 @@ function apriEditSpesa(id){
   const opts=CATS.map(c=>`<option value="${c}" ${c===s.cat?'selected':''}>${CAT_EMOJI[c]} ${c}</option>`).join('');
   apriEdit(`
     <h3><i class="ti ti-pencil"></i> Modifica spesa</h3>
+    <label>Inquilino</label>
+    <select id="ed-persona">
+      <option value="Antonio" ${s.persona==='Antonio'?'selected':''}>Antonio</option>
+      <option value="Concetta" ${s.persona==='Concetta'?'selected':''}>Concetta</option>
+    </select>
     <label>Categoria</label>
     <select id="ed-cat">${opts}</select>
     <label>Descrizione</label>
@@ -606,6 +626,7 @@ function apriEditSpesa(id){
 async function salvaEditSpesa(id){
   const s=spese.find(x=>x.id===id);
   if(!s) return;
+  const persona=document.getElementById('ed-persona').value;
   const cat=document.getElementById('ed-cat').value;
   const desc=document.getElementById('ed-desc').value.trim();
   const imp=parseImporto(document.getElementById('ed-imp').value);
@@ -618,9 +639,9 @@ async function salvaEditSpesa(id){
   chiudiEdit();
   const impStr=imp.toFixed(2).replace('.',',');
   try{
-    const res=await api({action:'update',foglio:'Spese',id,campo:'full',persona:s.persona,cat,desc,imp:impStr,data,pag,note});
+    const res=await api({action:'update',foglio:'Spese',id,campo:'full',persona,cat,desc,imp:impStr,data,pag,note});
     if(res.errore) throw new Error();
-    s.cat=cat;s.desc=desc;s.imp=imp;s.data=data;s.pag=pag;s.note=note;
+    s.persona=persona;s.cat=cat;s.desc=desc;s.imp=imp;s.data=data;s.pag=pag;s.note=note;
     renderLista();toast('✓ Spesa modificata');
   }catch(e){toast('❌ Errore modifica');}
 }
@@ -705,7 +726,6 @@ function renderRiepilogo(){
 }
 
 // ---- LISTA DELLA SPESA ----
-function selectSpesaPerson(p){spesaPerson=p;document.getElementById('sp-antonio').classList.toggle('active',p==='Antonio');document.getElementById('sp-concetta').classList.toggle('active',p==='Concetta');}
 
 async function ricaricaSpesa(){
   document.getElementById('lista-spesa-items').innerHTML='<div class="empty"><span class="spinner"></span></div>';
@@ -920,6 +940,9 @@ document.getElementById('data').value=new Date().toISOString().split('T')[0];
 aggiornaGraficoLabel();aggiornaRiepilogoLabel();
 if(sessionStorage.getItem('auth')==='1'){
   PWD=sessionStorage.getItem('pwd')||'';
+  currentUser=sessionStorage.getItem('user')||'Antonio';
+  selectPerson(currentUser);
+  selectSpesaPerson(currentUser);
   document.getElementById('login-screen').style.display='none';
   caricaSpese().then(()=>renderLista());
 }
