@@ -104,6 +104,7 @@ select:focus,input:focus{border-color:#534AB7}
 .confirm-btns{display:flex;gap:10px}
 .confirm-btns button{flex:1;padding:10px;border-radius:8px;border:none;font-size:13px;font-weight:500;cursor:pointer}
 .confirm-ok{background:#C0392B;color:#fff}
+.confirm-ok.save{background:#534AB7}
 .confirm-cancel{background:#f5f4f0;color:#1a1a18}
 </style>
 </head>
@@ -127,7 +128,7 @@ select:focus,input:focus{border-color:#534AB7}
     <p id="confirm-msg">Sei sicuro?</p>
     <div class="confirm-btns">
       <button class="confirm-cancel" onclick="confirmRispondi(false)">Annulla</button>
-      <button class="confirm-ok" onclick="confirmRispondi(true)">Elimina</button>
+      <button class="confirm-ok" id="confirm-ok-btn" onclick="confirmRispondi(true)">Elimina</button>
     </div>
   </div>
 </div>
@@ -385,10 +386,13 @@ let salvando=false;
 
 // ---- CONFIRM ----
 let _confirmResolve=null;
-function conferma(msg){
+function conferma(msg, labelBtn, isSave){
   return new Promise(res=>{
     _confirmResolve=res;
     document.getElementById('confirm-msg').textContent=msg;
+    const btn=document.getElementById('confirm-ok-btn');
+    btn.textContent=labelBtn||'Elimina';
+    btn.classList.toggle('save',!!isSave);
     document.getElementById('confirm-overlay').style.display='flex';
   });
 }
@@ -402,7 +406,10 @@ function apriEdit(html){
   document.getElementById('edit-box-content').innerHTML=html;
   document.getElementById('edit-overlay').style.display='flex';
 }
-function chiudiEdit(){document.getElementById('edit-overlay').style.display='none';}
+function chiudiEdit(){
+  document.getElementById('edit-overlay').style.display='none';
+  document.getElementById('edit-box-content').innerHTML='';
+}
 
 // ---- LOGIN ----
 async function doLogin(){
@@ -606,19 +613,20 @@ async function salvaEditSpesa(id){
   const pag=document.getElementById('ed-pag').value;
   const note=document.getElementById('ed-note').value.trim();
   if(!cat||!desc||!imp||imp<=0||!data){toast('⚠️ Compila tutti i campi obbligatori');return;}
-  const ok=await conferma('Confermi le modifiche a questa spesa?');
-  if(!ok) return;
+  const ok=await conferma('Confermi le modifiche a questa spesa?','Salva',true);
+  if(!ok){return;}
+  chiudiEdit();
   const impStr=imp.toFixed(2).replace('.',',');
   try{
     const res=await api({action:'update',foglio:'Spese',id,campo:'full',persona:s.persona,cat,desc,imp:impStr,data,pag,note});
     if(res.errore) throw new Error();
     s.cat=cat;s.desc=desc;s.imp=imp;s.data=data;s.pag=pag;s.note=note;
-    chiudiEdit();renderLista();toast('✓ Spesa modificata');
+    renderLista();toast('✓ Spesa modificata');
   }catch(e){toast('❌ Errore modifica');}
 }
 
 async function eliminaSpesa(id){
-  const ok=await conferma('Eliminare questa spesa?');
+  const ok=await conferma('Eliminare questa spesa?','Elimina',false);
   if(!ok) return;
   const idx=spese.findIndex(s=>s.id===id);
   if(idx===-1) return;
@@ -731,14 +739,14 @@ async function toggleSpesaItem(id){
 }
 
 async function eliminaSpesaItem(id){
-  const ok=await conferma('Eliminare questo elemento dalla lista?');if(!ok)return;
+  const ok=await conferma('Eliminare questo elemento dalla lista?','Elimina',false);if(!ok)return;
   listaSpesa=listaSpesa.filter(i=>i.id!==id);renderListaSpesa();
       await api({action:'delete',foglio:'Acquisti',id});
   toast('Elemento rimosso');
 }
 
 async function pulisciAcquistati(){
-  const ok=await conferma('Rimuovere tutti gli elementi acquistati?');if(!ok)return;
+  const ok=await conferma('Rimuovere tutti gli elementi acquistati?','Elimina',false);if(!ok)return;
   const daRimuovere=listaSpesa.filter(i=>i.done);
   listaSpesa=listaSpesa.filter(i=>!i.done);renderListaSpesa();
   for(const i of daRimuovere)     await api({action:'delete',foglio:'Acquisti',id:i.id});
@@ -789,13 +797,14 @@ async function salvaEditSpesaItem(id){
   const qty=document.getElementById('ed-sp-qty').value.trim();
   const persona=document.getElementById('ed-sp-persona').value;
   if(!text){toast('⚠️ Inserisci cosa comprare');return;}
-  const ok=await conferma('Confermi le modifiche?');
-  if(!ok) return;
+  const ok=await conferma('Confermi le modifiche?','Salva',true);
+  if(!ok){return;}
+  chiudiEdit();
   try{
     const res=await api({action:'update',foglio:'Acquisti',id,campo:'full',testo:text,qty,persona,fatto:i.done?'si':'no'});
     if(res.errore) throw new Error();
     i.text=text;i.qty=qty;i.persona=persona;
-    chiudiEdit();renderListaSpesa();toast('✓ Modificato');
+    renderListaSpesa();toast('✓ Modificato');
   }catch(e){toast('❌ Errore modifica');}
 }
 
@@ -832,13 +841,13 @@ async function toggleTodo(id){
 }
 
 async function eliminaTodo(id){
-  const ok=await conferma('Eliminare questa attività?');if(!ok)return;
+  const ok=await conferma('Eliminare questa attività?','Elimina',false);if(!ok)return;
   todoItems=todoItems.filter(i=>i.id!==id);renderTodo();
       await api({action:'delete',foglio:'Fare',id});toast('Attività eliminata');
 }
 
 async function pulisciTodoFatti(){
-  const ok=await conferma('Rimuovere tutte le attività completate?');if(!ok)return;
+  const ok=await conferma('Rimuovere tutte le attività completate?','Elimina',false);if(!ok)return;
   const daRim=todoItems.filter(i=>i.done);
   todoItems=todoItems.filter(i=>!i.done);renderTodo();
   for(const i of daRim) await api({action:'delete',foglio:'Fare',id:i.id});
@@ -895,13 +904,14 @@ async function salvaEditTodo(id){
   const ora=document.getElementById('ed-todo-ora').value;
   const person=document.getElementById('ed-todo-person').value;
   if(!text){toast('⚠️ Inserisci cosa fare');return;}
-  const ok=await conferma('Confermi le modifiche?');
-  if(!ok) return;
+  const ok=await conferma('Confermi le modifiche?','Salva',true);
+  if(!ok){return;}
+  chiudiEdit();
   try{
     const res=await api({action:'update',foglio:'Fare',id,campo:'full',testo:text,data:date,ora,persona:person,fatto:i.done?'si':'no'});
     if(res.errore) throw new Error();
     i.text=text;i.date=date;i.ora=ora;i.person=person;
-    chiudiEdit();renderTodo();toast('✓ Modificata');
+    renderTodo();toast('✓ Modificata');
   }catch(e){toast('❌ Errore modifica');}
 }
 
