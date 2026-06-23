@@ -583,6 +583,20 @@ function renderLista(){
   if(!filtered.length){el.innerHTML='<div class="empty">Nessuna spesa</div>';return;}
   el.innerHTML=filtered.map(s=>{
     const puoModificare=s.persona===currentUser;
+    const inAttesaEliminazione=s.statoSeg==='eliminata'&&puoModificare;
+    if(inAttesaEliminazione){
+      return `<div class="entry" style="opacity:.5">
+        <div class="entry-cat" style="background:${CAT_BG[s.cat]||'#f1efe8'}">${CAT_EMOJI[s.cat]||'📦'}</div>
+        <div class="entry-info">
+          <div class="desc">${esc(s.desc)}</div>
+          <div class="meta">${formatDataIt(s.data)} · <span class="badge ${s.persona==='Antonio'?'badge-ant':'badge-con'}">${s.persona}</span> · in attesa di eliminazione</div>
+        </div>
+        <div class="entry-amount">€${formatEur(s.imp)}</div>
+        <button class="entry-edit disabled" title="In attesa di eliminazione"><i class="ti ti-pencil"></i></button>
+        ${renderFlagBtn(s,puoModificare)}
+        <button class="entry-del disabled" title="In attesa di eliminazione"><i class="ti ti-trash"></i></button>
+      </div>`;
+    }
     return`<div class="entry">
       <div class="entry-cat" style="background:${CAT_BG[s.cat]||'#f1efe8'}">${CAT_EMOJI[s.cat]||'📦'}</div>
       <div class="entry-info">
@@ -601,25 +615,52 @@ function renderFlagBtn(s,puoModificare){
   // puoModificare = true significa che è una spesa MIA
   if(puoModificare){
     if(s.statoSeg==='attesa'){
-      // qualcuno mi ha segnalato un errore: clicco per leggere il messaggio
       return `<button class="entry-flag active-attesa" onclick="vediSegnalazione('${s.id}')" title="Hai una segnalazione da leggere">⚠️</button>`;
     }
-    if(s.statoSeg==='modificata'){
-      // ho già corretto, in attesa che il segnalante controlli - disabilitata per me
+    if(s.statoSeg==='modificata'||s.statoSeg==='eliminata'){
       return `<button class="entry-flag disabled" title="In attesa di verifica da parte dell'altro inquilino">🚩❗</button>`;
     }
     return `<button class="entry-flag disabled" title="Non puoi segnalare una tua spesa">🏳️</button>`;
   } else {
+    if(s.statoSeg==='eliminata'){
+      return `<button class="entry-flag active-modificata" onclick="vediEliminazione('${s.id}')" title="${s.persona} vuole eliminare questa spesa — confermi?">🚩❗</button>`;
+    }
     if(s.statoSeg==='modificata'){
-      // il proprietario ha corretto: il segnalante controlla
       return `<button class="entry-flag active-modificata" onclick="vediCorrezione('${s.id}')" title="${s.persona} ha modificato — verifica">🚩❗</button>`;
     }
     if(s.statoSeg==='attesa'){
-      // ho già segnalato, in attesa che l'altro corregga
       return `<button class="entry-flag disabled" title="Segnalazione in attesa di correzione da ${s.persona}">⚠️</button>`;
     }
     return `<button class="entry-flag" onclick="segnalaErrore('${s.id}')" title="Segnala errore a ${s.persona}">🏳️</button>`;
   }
+}
+
+async function vediEliminazione(id){
+  const s=spese.find(x=>x.id===id);
+  if(!s) return;
+  apriEdit(`
+    <h3>🚩❗ Richiesta di eliminazione</h3>
+    <p style="font-size:13px;color:#888780;margin-bottom:10px">Spesa: <strong>${esc(s.desc)}</strong> · €${formatEur(s.imp)} · ${formatDataIt(s.data)}</p>
+    <label style="margin-top:0">Il tuo messaggio originale:</label>
+    <p style="font-size:14px;background:#f5f4f0;padding:12px;border-radius:8px;line-height:1.5">${esc(s.segnalazione)}</p>
+    <p style="font-size:13px;color:#993C1D;margin-top:10px">🗑️ ${s.persona} ha richiesto di eliminare questa spesa.</p>
+    <div class="edit-btns">
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Esci senza confermare</button>
+      <button type="button" class="edit-save" onclick="confermaEliminazioneDefinitiva('${id}')">OK, elimina</button>
+    </div>
+  `);
+}
+
+async function confermaEliminazioneDefinitiva(id){
+  chiudiEdit();
+  const idx=spese.findIndex(s=>s.id===id);
+  if(idx===-1) return;
+  spese.splice(idx,1);
+  renderLista();
+  try{
+    await api({action:'delete',foglio:'Spese',id});
+    toast('✓ Spesa eliminata definitivamente');
+  }catch(e){toast('❌ Errore eliminazione');}
 }
 
 function vediSegnalazione(id){
@@ -695,8 +736,10 @@ function apriEditSpesa(id){
   const s=spese.find(x=>x.id===id);
   if(!s) return;
   const opts=CATS.map(c=>`<option value="${c}" ${c===s.cat?'selected':''}>${CAT_EMOJI[c]} ${c}</option>`).join('');
+  const mostraEliminaSegnalata=s.statoSeg==='attesa';
   apriEdit(`
     <h3><i class="ti ti-pencil"></i> Modifica spesa</h3>
+    ${mostraEliminaSegnalata?`<p style="font-size:13px;background:#FFF3E0;padding:10px;border-radius:8px;margin-bottom:10px;line-height:1.4">⚠️ <strong>Segnalazione:</strong> ${esc(s.segnalazione)}</p>`:''}
     <label>Inquilino</label>
     <select id="ed-persona">
       <option value="Antonio" ${s.persona==='Antonio'?'selected':''}>Antonio</option>
@@ -721,7 +764,22 @@ function apriEditSpesa(id){
       <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
       <button type="button" class="edit-save" onclick="salvaEditSpesa('${id}')">Salva modifiche</button>
     </div>
+    ${mostraEliminaSegnalata?`<button type="button" class="btn btn-red" style="margin-top:10px" onclick="eliminaSpesaSegnalata('${id}')"><i class="ti ti-trash"></i> Elimina spesa</button>`:''}
   `);
+}
+
+async function eliminaSpesaSegnalata(id){
+  const ok=await conferma('Eliminare definitivamente questa spesa? L\'altro inquilino dovrà confermare.','Elimina',false);
+  if(!ok) return;
+  chiudiEdit();
+  const s=spese.find(x=>x.id===id);
+  if(!s) return;
+  s.statoSeg='eliminata'; // nasconde dalla vista del proprietario, mostra 🚩❗ al segnalante
+  renderLista();
+  try{
+    await api({action:'update',foglio:'Spese',id,campo:'segnalaeliminata'});
+    toast('✓ Richiesta di eliminazione inviata');
+  }catch(e){toast('❌ Errore');}
 }
 
 async function salvaEditSpesa(id){
