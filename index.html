@@ -88,7 +88,8 @@ select:focus,input:focus{border-color:#534AB7}
 .todo-del{background:none;border:none;color:#b4b2a9;cursor:pointer;font-size:14px;padding:3px;flex-shrink:0}
 .entry-edit{background:none;border:none;color:#888780;cursor:pointer;font-size:14px;padding:4px;flex-shrink:0}
 .entry-edit.disabled{opacity:.3;cursor:not-allowed}
-.entry-flag{background:none;border:none;color:#E67E22;cursor:pointer;font-size:15px;padding:4px;flex-shrink:0}
+.entry-flag{background:none;border:none;color:#E67E22;cursor:pointer;font-size:14px;padding:4px;flex-shrink:0}
+.entry-flag.disabled{opacity:.25;cursor:not-allowed;color:#b4b2a9}
 .todo-edit{background:none;border:none;color:#888780;cursor:pointer;font-size:13px;padding:3px;flex-shrink:0}
 /* Edit dialog */
 .edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -586,7 +587,7 @@ function renderLista(){
       </div>
       <div class="entry-amount">€${formatEur(s.imp)}</div>
       <button class="entry-edit ${puoModificare?'':'disabled'}" onclick="${puoModificare?`apriEditSpesa('${s.id}')`:''}" title="${puoModificare?'Modifica':'Solo '+s.persona+' può modificare'}"><i class="ti ti-pencil"></i></button>
-      ${puoModificare?'':`<button class="entry-flag" onclick="segnalaErrore('${s.id}')" title="Segnala errore a ${s.persona}"><i class="ti ti-flag-3"></i></button>`}
+      <button class="entry-flag ${puoModificare?'disabled':''}" onclick="${puoModificare?'':`segnalaErrore('${s.id}')`}" title="${puoModificare?'Non puoi segnalare una tua spesa':'Segnala errore a '+s.persona}">⚠️</button>
       <button class="entry-del ${puoModificare?'':'disabled'}" onclick="${puoModificare?`eliminaSpesa('${s.id}')`:''}" title="${puoModificare?'Elimina':'Solo '+s.persona+' può eliminare'}"><i class="ti ti-trash"></i></button>
     </div>`;
   }).join('');
