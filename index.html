@@ -743,6 +743,7 @@ async function salvaEditSpesa(id){
     const res=await api({action:'update',foglio:'Spese',id,campo:'full',persona,cat,desc,imp:impStr,data,pag,note});
     if(res.errore) throw new Error();
     s.persona=persona;s.cat=cat;s.desc=desc;s.imp=imp;s.data=data;s.pag=pag;s.note=note;
+    if(s.statoSeg==='attesa') s.statoSeg='modificata';
     renderLista();toast('✓ Spesa modificata');
   }catch(e){toast('❌ Errore modifica');}
 }
