@@ -1520,6 +1520,7 @@ function apriScanner(){
       <video id="scan-video" autoplay playsinline muted></video>
       <div class="scan-overlay"><div class="scan-frame"></div></div>
     </div>
+    <p style="font-size:11px;color:#b4b2a9;text-align:center;margin-bottom:4px">Tieni il codice dritto (barre verticali) dentro il riquadro</p>
     <p style="font-size:12px;color:#888780;text-align:center" id="scan-status">Inquadra il codice a barre del prodotto</p>
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiScannerEEdit()">Annulla</button>
@@ -1550,10 +1551,10 @@ async function avviaScanner(){
     const videoEl=document.getElementById('scan-video');
     const statusEl=document.getElementById('scan-status');
 
-    // Step 1: richiede il permesso fotocamera esplicitamente (mostra il popup iOS)
+    // Step 1: richiede il permesso fotocamera esplicitamente (mostra il popup iOS), con risoluzione alta per migliorare la lettura
     let testStream;
     try{
-      testStream=await navigator.mediaDevices.getUserMedia({video:true});
+      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
     }catch(permErr){
       toast('❌ Permesso fotocamera negato: '+(permErr.name||permErr.message||'errore sconosciuto'));
       if(statusEl) statusEl.textContent='Errore: '+(permErr.name||permErr.message||'sconosciuto');
