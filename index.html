@@ -1419,8 +1419,8 @@ function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
   apriEdit(`
     <h3><i class="ti ti-plus"></i> Aggiungi prodotto ${paccoTotale>1?`(confezione ${paccoAttuale} di ${paccoTotale})`:''}</h3>
     <label>Codice a barre (opzionale)</label>
-    <input type="text" id="disp-codice" placeholder="es. 8001090341688" inputmode="numeric" value="${esc(codiceEsistente||'')}" ${paccoAttuale>1?'readonly':''}>
-    ${codiceEsistente?'<p style="font-size:11px;color:#888780;margin-top:2px">Verifica che il numero corrisponda al codice sulla confezione</p>':''}
+    <input type="text" id="disp-codice" placeholder="es. 8001090341688" inputmode="numeric" value="${esc(codiceEsistente||'')}" ${paccoAttuale>1?'readonly':'onblur="verificaCodiceManuale()"'}>
+    <p style="font-size:11px;color:#888780;margin-top:2px" id="disp-codice-status">${codiceEsistente?'Verifica che il numero corrisponda al codice sulla confezione':''}</p>
     <label>Categoria</label>
     <select id="disp-categoria" onchange="aggiornaCampiProdotto()">
       <option value="Alimenti" ${base.categoria==='Alimenti'||!base.categoria?'selected':''}>🍽️ Alimenti</option>
@@ -1466,6 +1466,58 @@ function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
 
 function aggiornaCampiProdotto(){
   // hook per eventuali suggerimenti futuri in base a categoria (placeholder)
+}
+
+async function verificaCodiceManuale(){
+  const codice=document.getElementById('disp-codice').value.trim();
+  const statusEl=document.getElementById('disp-codice-status');
+  if(!codice){if(statusEl) statusEl.textContent='';return;}
+
+  // 1. cerca nel foglio Dispensa (prodotto attualmente presente)
+  const trovato=dispensaItems.find(i=>i.codice===codice);
+  if(trovato){
+    if(statusEl) statusEl.textContent='✓ Prodotto già registrato — campi precompilati';
+    document.getElementById('disp-categoria').value=trovato.cat||'Alimenti';
+    document.getElementById('disp-tipo').value=trovato.tipo||'';
+    document.getElementById('disp-modello').value=trovato.modello||'';
+    document.getElementById('disp-marca').value=trovato.marca||'';
+    return;
+  }
+
+  // 2. cerca nello storico (prodotto già conosciuto ma terminato/eliminato in passato)
+  if(statusEl) statusEl.textContent='🔍 Verifica in corso...';
+  try{
+    const rStorico=await api({action:'cercaCodice',codice});
+    if(rStorico.trovato){
+      if(statusEl) statusEl.textContent='✓ Prodotto trovato nello storico — campi precompilati';
+      document.getElementById('disp-categoria').value=rStorico.cat||'Alimenti';
+      document.getElementById('disp-tipo').value=rStorico.tipo||'';
+      document.getElementById('disp-modello').value=rStorico.modello||'';
+      document.getElementById('disp-marca').value=rStorico.marca||'';
+      return;
+    }
+  }catch(e){/* prosegue con la ricerca online */}
+
+  // 3. cerca su Open Food Facts
+  try{
+    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json`);
+    const data=await r.json();
+    if(data.status===1&&data.product){
+      const nomeCompleto=data.product.product_name||data.product.product_name_it||'';
+      const marca=data.product.brands?data.product.brands.split(',')[0].trim():'';
+      let tipo=nomeCompleto;
+      if(marca&&nomeCompleto.toLowerCase().startsWith(marca.toLowerCase())){
+        tipo=nomeCompleto.substring(marca.length).trim();
+      }
+      if(statusEl) statusEl.textContent='✓ Prodotto trovato online — campi precompilati';
+      document.getElementById('disp-tipo').value=tipo||nomeCompleto||'';
+      document.getElementById('disp-marca').value=marca||'';
+    }else{
+      if(statusEl) statusEl.textContent='Prodotto non trovato — completa i campi manualmente';
+    }
+  }catch(e){
+    if(statusEl) statusEl.textContent='Errore di ricerca — completa i campi manualmente';
+  }
 }
 
 async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
