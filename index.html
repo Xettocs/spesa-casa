@@ -1517,10 +1517,10 @@ function apriScanner(){
   apriEdit(`
     <h3><i class="ti ti-barcode"></i> Scansiona codice a barre</h3>
     <div class="scan-box">
-      <video id="scan-video" autoplay playsinline muted></video>
+      <video id="scan-video" autoplay playsinline muted onclick="tentaRefocus()"></video>
       <div class="scan-overlay"><div class="scan-frame"></div></div>
     </div>
-    <p style="font-size:11px;color:#b4b2a9;text-align:center;margin-bottom:4px">Tieni il codice dritto (barre verticali) dentro il riquadro</p>
+    <p style="font-size:11px;color:#b4b2a9;text-align:center;margin-bottom:4px">Tocca lo schermo sul codice per aiutare la fotocamera a metterlo a fuoco, poi allontana leggermente il telefono</p>
     <p style="font-size:12px;color:#888780;text-align:center" id="scan-status">Inquadra il codice a barre del prodotto</p>
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiScannerEEdit()">Annulla</button>
@@ -1551,15 +1551,30 @@ async function avviaScanner(){
     const videoEl=document.getElementById('scan-video');
     const statusEl=document.getElementById('scan-status');
 
-    // Step 1: richiede il permesso fotocamera esplicitamente (mostra il popup iOS), con risoluzione alta per migliorare la lettura
+    // Step 1: richiede il permesso fotocamera esplicitamente (mostra il popup iOS), con risoluzione alta e autofocus continuo
     let testStream;
     try{
-      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
+      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080},advanced:[{focusMode:'continuous'}]}});
     }catch(permErr){
-      toast('❌ Permesso fotocamera negato: '+(permErr.name||permErr.message||'errore sconosciuto'));
-      if(statusEl) statusEl.textContent='Errore: '+(permErr.name||permErr.message||'sconosciuto');
-      return;
+      // se i vincoli avanzati non sono supportati, riprova con vincoli base
+      try{
+        testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      }catch(permErr2){
+        toast('❌ Permesso fotocamera negato: '+(permErr2.name||permErr2.message||'errore sconosciuto'));
+        if(statusEl) statusEl.textContent='Errore: '+(permErr2.name||permErr2.message||'sconosciuto');
+        return;
+      }
     }
+    // Tentativo aggiuntivo: forza l'autofocus continuo sulla traccia video, se supportato
+    try{
+      const track=testStream.getVideoTracks()[0];
+      if(track && track.getCapabilities){
+        const caps=track.getCapabilities();
+        if(caps.focusMode && caps.focusMode.includes('continuous')){
+          await track.applyConstraints({advanced:[{focusMode:'continuous'}]});
+        }
+      }
+    }catch(focusErr){/* non bloccante */}
     // ferma subito il test-stream: ci servirà solo per leggere le label delle fotocamere
     testStream.getTracks().forEach(t=>t.stop());
 
@@ -1628,6 +1643,23 @@ function fermaScanner(){
     video.srcObject.getTracks().forEach(t=>t.stop());
     video.srcObject=null;
   }
+}
+
+async function tentaRefocus(){
+  const video=document.getElementById('scan-video');
+  if(!video||!video.srcObject) return;
+  try{
+    const track=video.srcObject.getVideoTracks()[0];
+    if(track && track.getCapabilities){
+      const caps=track.getCapabilities();
+      if(caps.focusMode){
+        // alterna tra manual e continuous per "forzare" un nuovo tentativo di fuoco
+        if(caps.focusMode.includes('manual')) await track.applyConstraints({advanced:[{focusMode:'manual'}]});
+        await new Promise(r=>setTimeout(r,100));
+        if(caps.focusMode.includes('continuous')) await track.applyConstraints({advanced:[{focusMode:'continuous'}]});
+      }
+    }
+  }catch(e){/* non bloccante, il tap serve comunque come feedback visivo */}
 }
 
 async function gestisciCodiceScansionato(codice){
