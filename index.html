@@ -122,7 +122,7 @@ select:focus,input:focus{border-color:#534AB7}
 .scan-box{background:#1a1a18;border-radius:12px;overflow:hidden;position:relative;margin-bottom:12px}
 .scan-box video{width:100%;display:block}
 .scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.scan-frame{width:70%;height:90px;border:2px solid #1D9E75;border-radius:8px}
+.scan-frame{width:60%;height:50px;border:2px solid #1D9E75;border-radius:8px}
 .settings-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
 .tab-cat{display:flex;border-radius:8px;overflow:hidden;border:0.5px solid #d3d1c7;margin-bottom:10px}
 .tab-cat-item{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:#888780}
@@ -1595,10 +1595,16 @@ async function avviaScanner(){
           return;
         }
         if(err){
-          const nomeErr=String(err.name||err.message||err);
+          let nomeErr='?';
+          try{
+            if(err.name) nomeErr=err.name;
+            else if(err.message) nomeErr=err.message;
+            else if(typeof err==='string') nomeErr=err;
+            else nomeErr=JSON.stringify(err);
+          }catch(_){nomeErr='[errore non leggibile]';}
           const eNormale=/NotFound|Checksum|Format/i.test(nomeErr);
           if(!eNormale && statusEl) statusEl.textContent='Errore scanner: '+nomeErr;
-          else if(statusEl) statusEl.textContent='Scansione in corso... ('+nomeErr+')';
+          else if(statusEl) statusEl.textContent='Scansione in corso...';
         }
       });
     }catch(decErr){
