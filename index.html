@@ -1562,10 +1562,11 @@ async function avviaScanner(){
     // ferma subito il test-stream: ci servirà solo per leggere le label delle fotocamere
     testStream.getTracks().forEach(t=>t.stop());
 
-    // Step 2: ora che il permesso è concesso, elenchiamo i device con le label corrette
+    // Step 2: elenchiamo i device con l'API nativa del browser (non dipende da metodi specifici di ZXing)
     let devices;
     try{
-      devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
+      const allDevices=await navigator.mediaDevices.enumerateDevices();
+      devices=allDevices.filter(d=>d.kind==='videoinput');
     }catch(devErr){
       toast('❌ Errore elenco fotocamere: '+(devErr.message||devErr.name||'sconosciuto'));
       if(statusEl) statusEl.textContent='Errore elenco fotocamere: '+(devErr.message||devErr.name||'sconosciuto');
@@ -1579,7 +1580,7 @@ async function avviaScanner(){
     const back=devices.find(d=>/back|rear|environment/i.test(d.label));
     const deviceId=(back||devices[devices.length-1]).deviceId;
 
-    if(statusEl) statusEl.textContent='Avvio scansione su: '+((back||devices[devices.length-1]).label||deviceId);
+    if(statusEl) statusEl.textContent='Avvio scansione su: '+((back||devices[devices.length-1]).label||'fotocamera');
 
     // Step 3: decodeFromVideoDevice gestisce internamente apertura stream + loop di scansione
     try{
