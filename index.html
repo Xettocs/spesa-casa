@@ -1403,6 +1403,7 @@ function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
       <option value="Alimenti" ${base.categoria==='Alimenti'||!base.categoria?'selected':''}>🍽️ Alimenti</option>
       <option value="Cosmetici" ${base.categoria==='Cosmetici'?'selected':''}>🧴 Cosmetici</option>
       <option value="Prodotti per la casa" ${base.categoria==='Prodotti per la casa'?'selected':''}>🏠 Prodotti per la casa</option>
+      <option value="Sanitari" ${base.categoria==='Sanitari'?'selected':''}>🧻 Sanitari</option>
       <option value="Altro" ${base.categoria==='Altro'?'selected':''}>📦 Altro</option>
     </select>
     <label>Tipo</label>
@@ -1562,33 +1563,48 @@ async function avviaScanner(){
     testStream.getTracks().forEach(t=>t.stop());
 
     // Step 2: ora che il permesso è concesso, elenchiamo i device con le label corrette
-    const devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
+    let devices;
+    try{
+      devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
+    }catch(devErr){
+      toast('❌ Errore elenco fotocamere: '+(devErr.message||devErr.name||'sconosciuto'));
+      if(statusEl) statusEl.textContent='Errore elenco fotocamere: '+(devErr.message||devErr.name||'sconosciuto');
+      return;
+    }
     if(!devices.length){
       toast('❌ Nessuna fotocamera trovata');
+      if(statusEl) statusEl.textContent='Nessuna fotocamera trovata';
       return;
     }
     const back=devices.find(d=>/back|rear|environment/i.test(d.label));
     const deviceId=(back||devices[devices.length-1]).deviceId;
 
-    if(statusEl) statusEl.textContent='Scansione in corso...';
+    if(statusEl) statusEl.textContent='Avvio scansione su: '+((back||devices[devices.length-1]).label||deviceId);
 
     // Step 3: decodeFromVideoDevice gestisce internamente apertura stream + loop di scansione
-    zxingReader.decodeFromVideoDevice(deviceId,videoEl,async(result,err,controls)=>{
-      if(result){
-        const codice=result.getText();
-        if(statusEl) statusEl.textContent='✓ Codice rilevato: '+codice;
-        controls.stop();
-        fermaScanner();
-        chiudiEdit();
-        await gestisciCodiceScansionato(codice);
-        return;
-      }
-      if(err && err.name && err.name!=='NotFoundException' && err.name!=='ChecksumException' && err.name!=='FormatException'){
-        if(statusEl) statusEl.textContent='Errore scanner: '+err.name;
-      }
-    });
+    try{
+      zxingReader.decodeFromVideoDevice(deviceId,videoEl,async(result,err,controls)=>{
+        if(result){
+          const codice=result.getText();
+          if(statusEl) statusEl.textContent='✓ Codice rilevato: '+codice;
+          controls.stop();
+          fermaScanner();
+          chiudiEdit();
+          await gestisciCodiceScansionato(codice);
+          return;
+        }
+        if(err && err.name && err.name!=='NotFoundException' && err.name!=='ChecksumException' && err.name!=='FormatException'){
+          if(statusEl) statusEl.textContent='Errore scanner: '+err.name;
+        }
+      });
+    }catch(decErr){
+      toast('❌ Errore avvio decodifica: '+(decErr.message||decErr.name||'sconosciuto'));
+      if(statusEl) statusEl.textContent='Errore avvio decodifica: '+(decErr.message||decErr.name||'sconosciuto');
+    }
   }catch(e){
-    toast('❌ Impossibile accedere alla fotocamera');
+    toast('❌ Impossibile accedere alla fotocamera: '+(e.message||e.name||'errore generico'));
+    const statusEl2=document.getElementById('scan-status');
+    if(statusEl2) statusEl2.textContent='Errore: '+(e.message||e.name||'generico');
   }
 }
 
