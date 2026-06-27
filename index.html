@@ -1594,21 +1594,20 @@ async function avviaScanner(){
           await gestisciCodiceScansionato(codice);
           return;
         }
-        if(err){
-          let nomeErr='?';
-          try{
-            if(err.name) nomeErr=err.name;
-            else if(err.message) nomeErr=err.message;
-            else if(typeof err==='string') nomeErr=err;
-            else nomeErr=JSON.stringify(err);
-          }catch(_){nomeErr='[errore non leggibile]';}
-          const eNormale=/NotFound|Checksum|Format/i.test(nomeErr);
+        if(err && statusEl && !statusEl.dataset.errShown){
+          statusEl.dataset.errShown='1';
+          window.__lastScanErr=err;
+          console.log('SCANNER ERROR RAW OBJECT:',err);
+          console.log('typeof err:',typeof err);
+          console.log('err.constructor.name:',err&&err.constructor?err.constructor.name:'n/a');
+          console.log('err.name:',err&&err.name);
+          console.log('err.message:',err&&err.message);
+          const tipoCostruttore=(err&&err.constructor&&err.constructor.name)||'sconosciuto';
+          const eNormale=/NotFound|Checksum|Format/i.test(tipoCostruttore)||/NotFound|Checksum|Format/i.test(String(err&&err.name||''));
           if(!eNormale){
-            if(statusEl && !statusEl.dataset.errShown){
-              statusEl.textContent='Errore scanner: '+nomeErr;
-              statusEl.dataset.errShown='1';
-              console.log('SCANNER ERROR RAW:',err);
-            }
+            statusEl.textContent='Tipo errore: '+tipoCostruttore+' | name: '+(err.name||'(vuoto)')+' | msg: '+(err.message||'(vuoto)');
+          } else {
+            statusEl.dataset.errShown='';
           }
         }
       });
