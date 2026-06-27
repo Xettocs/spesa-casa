@@ -123,7 +123,7 @@ select:focus,input:focus{border-color:#534AB7}
 .scan-box{background:#1a1a18;border-radius:12px;overflow:hidden;position:relative;margin-bottom:12px}
 .scan-box video{width:100%;display:block}
 .scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.scan-frame{width:60%;height:50px;border:2px solid #1D9E75;border-radius:8px}
+.scan-frame{width:75%;height:140px;border:2px solid #1D9E75;border-radius:8px}
 .settings-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
 .tab-cat{display:flex;border-radius:8px;overflow:hidden;border:0.5px solid #d3d1c7;margin-bottom:10px}
 .tab-cat-item{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:#888780}
@@ -1385,14 +1385,13 @@ async function ricaricaSpesaSilenzioso(){
 }
 
 async function aggiungiAllaListaDaDispensa(nome){
-  const id=String(Date.now());
+  const id=String(Date.now())+'_d';
   try{
     const res=await api({action:'add',foglio:'Acquisti',id,testo:nome,qty:'',persona:currentUser});
-    if(!res.errore){
-      listaSpesa.push({id,text:nome,qty:'',persona:currentUser,done:false});
-      toast('✓ Aggiunto alla lista della spesa');
-    }
-  }catch(e){toast('❌ Errore aggiunta a lista spesa');}
+    if(res.errore) throw new Error(res.errore);
+    listaSpesa.push({id,text:nome,qty:'',persona:currentUser,done:false});
+    toast('✓ Aggiunto alla lista della spesa');
+  }catch(e){toast('❌ Errore aggiunta a lista spesa: '+(e.message||'sconosciuto'));}
 }
 
 function apriAggiungiManualeDispensa(){
