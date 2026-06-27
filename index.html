@@ -1516,12 +1516,12 @@ async function avviaScanner(){
     ];
     const hints=new Map();
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);
-    zxingReader=new ZXing.BrowserMultiFormatReader(hints);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+    zxingReader=new ZXing.BrowserMultiFormatReader(hints,300); // riprova ogni 300ms
 
     const videoEl=document.getElementById('scan-video');
+    const statusEl=document.getElementById('scan-status');
 
-    // Richiede il permesso fotocamera e usa DIRETTAMENTE questo stream
-    // (su iOS Safari aprire un secondo stream subito dopo aver chiuso il primo spesso fallisce)
     let stream;
     try{
       stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
@@ -1530,15 +1530,31 @@ async function avviaScanner(){
       return;
     }
     videoEl.srcObject=stream;
+    videoEl.setAttribute('playsinline',true);
     await videoEl.play();
+
+    // attende che il video abbia dimensioni reali prima di iniziare la decodifica
+    await new Promise(res=>{
+      if(videoEl.videoWidth>0) return res();
+      videoEl.onloadedmetadata=()=>res();
+    });
+
+    if(statusEl) statusEl.textContent='Scansione in corso...';
 
     zxingReader.decodeFromVideoElement(videoEl,async(result,err,controls)=>{
       if(result){
         const codice=result.getText();
+        if(statusEl) statusEl.textContent='✓ Codice rilevato: '+codice;
         controls.stop();
         fermaScanner();
         chiudiEdit();
         await gestisciCodiceScansionato(codice);
+        return;
+      }
+      // err di tipo "not found" è normale tra un frame e l'altro: il reader continua da solo.
+      // Se invece l'errore è di altro tipo (es. permessi/stream), lo segnaliamo.
+      if(err && err.name && err.name!=='NotFoundException' && err.name!=='ChecksumException' && err.name!=='FormatException'){
+        if(statusEl) statusEl.textContent='Errore scanner: '+err.name;
       }
     });
   }catch(e){
