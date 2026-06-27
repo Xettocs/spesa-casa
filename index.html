@@ -1418,6 +1418,9 @@ function apriAggiungiManualeDispensa(){
 function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
   apriEdit(`
     <h3><i class="ti ti-plus"></i> Aggiungi prodotto ${paccoTotale>1?`(confezione ${paccoAttuale} di ${paccoTotale})`:''}</h3>
+    <label>Codice a barre (opzionale)</label>
+    <input type="text" id="disp-codice" placeholder="es. 8001090341688" inputmode="numeric" value="${esc(codiceEsistente||'')}" ${paccoAttuale>1?'readonly':''}>
+    ${codiceEsistente?'<p style="font-size:11px;color:#888780;margin-top:2px">Verifica che il numero corrisponda al codice sulla confezione</p>':''}
     <label>Categoria</label>
     <select id="disp-categoria" onchange="aggiornaCampiProdotto()">
       <option value="Alimenti" ${base.categoria==='Alimenti'||!base.categoria?'selected':''}>🍽️ Alimenti</option>
@@ -1466,6 +1469,7 @@ function aggiornaCampiProdotto(){
 }
 
 async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
+  const codice=document.getElementById('disp-codice').value.trim();
   const categoria=document.getElementById('disp-categoria').value;
   const tipo=document.getElementById('disp-tipo').value.trim();
   const modello=document.getElementById('disp-modello').value.trim();
@@ -1485,14 +1489,14 @@ async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
 
   const id=String(Date.now())+'_'+paccoAttuale;
   try{
-    const res=await api({action:'add',foglio:'Dispensa',id,codice:codiceEsistente||'',nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
+    const res=await api({action:'add',foglio:'Dispensa',id,codice,nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
     if(res.errore) throw new Error();
-    dispensaItems.push({id,codice:codiceEsistente||'',nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
+    dispensaItems.push({id,codice,nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
   }catch(e){toast('❌ Errore salvataggio');return;}
 
   if(paccoAttuale<quantita){
-    // passa alla confezione successiva, riusando gli stessi dati anagrafici (incluso tiposcad) ma scadenza vuota
-    mostraFormProdotto({categoria,tipo,modello,marca,quantita,tiposcad},paccoAttuale+1,quantita,codiceEsistente);
+    // passa alla confezione successiva, riusando gli stessi dati anagrafici (incluso tiposcad e codice) ma scadenza vuota
+    mostraFormProdotto({categoria,tipo,modello,marca,quantita,tiposcad},paccoAttuale+1,quantita,codice);
   } else {
     chiudiEdit();
     renderDispensa();aggiornaBadgeDispensa();
