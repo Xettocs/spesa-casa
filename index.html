@@ -123,7 +123,7 @@ select:focus,input:focus{border-color:#534AB7}
 .scan-box{background:#1a1a18;border-radius:12px;overflow:hidden;position:relative;margin-bottom:12px}
 .scan-box video{width:100%;display:block}
 .scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.scan-frame{width:75%;height:140px;border:2px solid #1D9E75;border-radius:8px}
+.scan-frame{width:70%;height:90px;border:2px solid #1D9E75;border-radius:8px}
 .settings-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
 .tab-cat{display:flex;border-radius:8px;overflow:hidden;border:0.5px solid #d3d1c7;margin-bottom:10px}
 .tab-cat-item{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:#888780}
@@ -1234,6 +1234,7 @@ function renderDispensa(){
           </div>
         </div>
         <div class="pantry-actions" style="margin-top:8px">
+          <button class="pantry-btn" onclick="apriEditDispensaItem('${i.id}')"><i class="ti ti-pencil"></i></button>
           <button class="pantry-btn" onclick="segnaTerminato('${i.id}')"><i class="ti ti-check"></i> Terminato</button>
         </div>
       </div>`;
@@ -1263,6 +1264,7 @@ function renderDispensa(){
           <div class="pantry-sub">${scad?'Scadenza più vicina: '+formatDataIt(scad):'Nessuna scadenza'} · Quantità: ${lotti.length}</div>
         </div>
         <div class="pantry-actions">
+          <button class="pantry-btn" onclick="apriEditDispensaItem('${principale.id}')"><i class="ti ti-pencil"></i></button>
           <button class="pantry-btn" onclick="apriLotto('${principale.id}')"><i class="ti ti-package"></i> Apri</button>
           <button class="pantry-btn danger" onclick="eliminaLotto('${principale.id}')"><i class="ti ti-trash"></i></button>
         </div>
@@ -1274,6 +1276,7 @@ function renderDispensa(){
           const tClsL=stL==='expired'?'expired-text':(stL==='warn'?'warn-text':'');
           return `<div class="pantry-lot">
             <div class="pantry-lot-info ${tClsL}">${l.scadenza?'Scad. '+formatDataIt(l.scadenza):'Nessuna scadenza'}</div>
+            <button class="pantry-btn" onclick="apriEditDispensaItem('${l.id}')"><i class="ti ti-pencil"></i></button>
             <button class="pantry-btn" onclick="apriLotto('${l.id}')"><i class="ti ti-package"></i></button>
             <button class="pantry-btn danger" onclick="eliminaLotto('${l.id}')"><i class="ti ti-trash"></i></button>
           </div>`;
@@ -1483,6 +1486,80 @@ async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
   }
 }
 
+function apriEditDispensaItem(id){
+  const item=dispensaItems.find(i=>i.id===id);
+  if(!item) return;
+  const isUso=item.stato==='uso';
+  apriEdit(`
+    <h3><i class="ti ti-pencil"></i> Modifica prodotto</h3>
+    <label>Categoria</label>
+    <select id="ed-disp-categoria">
+      <option value="Alimenti" ${item.cat==='Alimenti'?'selected':''}>🍽️ Alimenti</option>
+      <option value="Cosmetici" ${item.cat==='Cosmetici'?'selected':''}>🧴 Cosmetici</option>
+      <option value="Prodotti per la casa" ${item.cat==='Prodotti per la casa'?'selected':''}>🏠 Prodotti per la casa</option>
+      <option value="Farmaceutici" ${item.cat==='Farmaceutici'?'selected':''}>💊 Farmaceutici</option>
+      <option value="Altro" ${item.cat==='Altro'?'selected':''}>📦 Altro</option>
+    </select>
+    <label>Tipo</label>
+    <input type="text" id="ed-disp-tipo" value="${esc(item.tipo||'')}">
+    <label>Modello</label>
+    <input type="text" id="ed-disp-modello" value="${esc(item.modello||'')}">
+    <label>Marca</label>
+    <input type="text" id="ed-disp-marca" value="${esc(item.marca||'')}">
+    <label>Scadenza confezione (opzionale)</label>
+    <input type="date" id="ed-disp-scadenza" value="${soloData(item.scadenza)}">
+    ${isUso?`
+    <label>Data apertura</label>
+    <input type="date" id="ed-disp-dataapertura" value="${soloData(item.dataapertura)}" max="${new Date().toISOString().split('T')[0]}">
+    `:''}
+    <label>Scadenza dopo apertura (opzionale)</label>
+    <select id="ed-disp-tiposcad">
+      <option value="" ${!item.tiposcad?'selected':''}>— Nessuna regola particolare —</option>
+      <option value="1" ${item.tiposcad==='1'?'selected':''}>1 mese dopo apertura</option>
+      <option value="2" ${item.tiposcad==='2'?'selected':''}>2 mesi dopo apertura</option>
+      <option value="3" ${item.tiposcad==='3'?'selected':''}>3 mesi dopo apertura</option>
+      <option value="4" ${item.tiposcad==='4'?'selected':''}>4 mesi dopo apertura</option>
+      <option value="5" ${item.tiposcad==='5'?'selected':''}>5 mesi dopo apertura</option>
+      <option value="6" ${item.tiposcad==='6'?'selected':''}>6 mesi dopo apertura</option>
+      <option value="7" ${item.tiposcad==='7'?'selected':''}>7 mesi dopo apertura</option>
+      <option value="8" ${item.tiposcad==='8'?'selected':''}>8 mesi dopo apertura</option>
+      <option value="9" ${item.tiposcad==='9'?'selected':''}>9 mesi dopo apertura</option>
+      <option value="10" ${item.tiposcad==='10'?'selected':''}>10 mesi dopo apertura</option>
+      <option value="11" ${item.tiposcad==='11'?'selected':''}>11 mesi dopo apertura</option>
+      <option value="12" ${item.tiposcad==='12'?'selected':''}>12 mesi dopo apertura</option>
+    </select>
+    <div class="edit-btns">
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+      <button type="button" class="edit-save" onclick="salvaEditDispensaItem('${id}')">Salva modifiche</button>
+    </div>
+  `);
+}
+
+async function salvaEditDispensaItem(id){
+  const item=dispensaItems.find(i=>i.id===id);
+  if(!item) return;
+  const cat=document.getElementById('ed-disp-categoria').value;
+  const tipo=document.getElementById('ed-disp-tipo').value.trim();
+  const modello=document.getElementById('ed-disp-modello').value.trim();
+  const marca=document.getElementById('ed-disp-marca').value.trim();
+  const scadenza=document.getElementById('ed-disp-scadenza').value;
+  const tiposcad=document.getElementById('ed-disp-tiposcad').value;
+  const dataapertura=item.stato==='uso'?(document.getElementById('ed-disp-dataapertura').value||item.dataapertura):item.dataapertura;
+  if(!tipo){toast('⚠️ Inserisci almeno il Tipo del prodotto');return;}
+  const ok=await conferma('Confermi le modifiche a questo prodotto?','Salva',true);
+  if(!ok) return;
+  chiudiEdit();
+  const nome=[marca,tipo,modello].filter(Boolean).join(' ')||tipo;
+  try{
+    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome,cat,stato:item.stato,scadenza,tiposcad,dataapertura,persona:currentUser,tipo,modello,marca});
+    if(res.errore) throw new Error();
+    item.cat=cat;item.tipo=tipo;item.modello=modello;item.marca=marca;item.nome=nome;
+    item.scadenza=scadenza;item.tiposcad=tiposcad;item.dataapertura=dataapertura;
+    renderDispensa();aggiornaBadgeDispensa();
+    toast('✓ Prodotto modificato');
+  }catch(e){toast('❌ Errore modifica');}
+}
+
 function apriImpostazioniDispensa(){
   const attuale=soglieGiorni();
   apriEdit(`
@@ -1545,7 +1622,7 @@ async function avviaScanner(){
 
     let testStream;
     try{
-      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:960},height:{ideal:540}}});
     }catch(permErr){
       if(statusEl) statusEl.textContent='2. Fallback vincoli base...';
       try{
