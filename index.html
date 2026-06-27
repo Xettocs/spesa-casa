@@ -1348,10 +1348,10 @@ async function eliminaLotto(id){
   if(!item) return;
   const ok=await conferma(`Eliminare "${item.nome}" dalla dispensa?`,'Elimina',false);
   if(!ok) return;
-  item.stato='archiviato';
+  dispensaItems=dispensaItems.filter(i=>i.id!==id);
   renderDispensa();aggiornaBadgeDispensa();
   try{
-    await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'archiviato',scadenza:item.scadenza,tiposcad:item.tiposcad,dataapertura:item.dataapertura,persona:currentUser,tipo:item.tipo,modello:item.modello,marca:item.marca});
+    await api({action:'delete',foglio:'Dispensa',id,motivo:'eliminato',persona:currentUser});
     toast('Prodotto eliminato');
   }catch(e){toast('❌ Errore eliminazione');}
 }
@@ -1361,10 +1361,10 @@ async function segnaTerminato(id){
   if(!item) return;
   const ok=await conferma(`"${item.nome}" è terminato?`,'Sì, terminato',true);
   if(!ok) return;
-  item.stato='archiviato';
+  dispensaItems=dispensaItems.filter(i=>i.id!==id);
   renderDispensa();aggiornaBadgeDispensa();
   try{
-    await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'archiviato',scadenza:item.scadenza,tiposcad:item.tiposcad,dataapertura:item.dataapertura,persona:currentUser,tipo:item.tipo,modello:item.modello,marca:item.marca});
+    await api({action:'delete',foglio:'Dispensa',id,motivo:'terminato',persona:currentUser});
     // verifica se già presente in lista della spesa
     await ricaricaSpesaSilenzioso();
     const giaPresente=listaSpesa.some(x=>!x.done&&x.text.toLowerCase().includes(item.nome.toLowerCase()));
@@ -1546,7 +1546,7 @@ async function avviaScanner(){
 
     let testStream;
     try{
-      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
+      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
     }catch(permErr){
       if(statusEl) statusEl.textContent='2. Fallback vincoli base...';
       try{
@@ -1609,8 +1609,10 @@ async function avviaScanner(){
     if(statusEl) statusEl.textContent='6. Avvio decodeFromVideoDevice...';
 
     try{
+      let giaGestito=false;
       zxingReader.decodeFromVideoDevice(deviceId,videoEl,async(result,err,controls)=>{
-        if(result){
+        if(result && !giaGestito){
+          giaGestito=true;
           const codice=result.getText();
           if(statusEl) statusEl.textContent='✓ Codice rilevato: '+codice;
           controls.stop();
@@ -1679,14 +1681,22 @@ async function tentaRefocus(){
 }
 
 async function gestisciCodiceScansionato(codice){
-  // 1. cerca nel foglio Dispensa (prodotto già scansionato in passato)
+  // 1. cerca nel foglio Dispensa (prodotto attualmente presente)
   const trovato=dispensaItems.find(i=>i.codice===codice);
   if(trovato){
     mostraFormProdotto({categoria:trovato.cat,tipo:trovato.tipo,modello:trovato.modello,marca:trovato.marca},1,1,codice);
     return;
   }
-  // 2. cerca su Open Food Facts
+  // 2. cerca nello storico (prodotto già conosciuto ma terminato/eliminato in passato)
   toast('🔍 Ricerca prodotto...');
+  try{
+    const rStorico=await api({action:'cercaCodice',codice});
+    if(rStorico.trovato){
+      mostraFormProdotto({categoria:rStorico.cat,tipo:rStorico.tipo,modello:rStorico.modello,marca:rStorico.marca},1,1,codice);
+      return;
+    }
+  }catch(e){/* prosegue con la ricerca online */}
+  // 3. cerca su Open Food Facts
   try{
     const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json`);
     const data=await r.json();
@@ -1698,14 +1708,14 @@ async function gestisciCodiceScansionato(codice){
       if(marca&&nomeCompleto.toLowerCase().startsWith(marca.toLowerCase())){
         tipo=nomeCompleto.substring(marca.length).trim();
       }
-      mostraFormProdotto({categoria:'Alimenti',tipo:tipo||nomeCompleto||'Prodotto',modello:'',marca},1,1,codice);
+      mostraFormProdotto({categoria:'Alimenti',tipo:tipo||nomeCompleto||'',modello:'',marca},1,1,codice);
     }else{
-      mostraFormProdotto({categoria:'Alimenti',tipo:'',modello:'',marca:''},1,1,codice);
-      toast('⚠️ Prodotto non trovato online — completa i dati manualmente');
+      const proseguire=await conferma(`Prodotto non trovato nel database online. Procedere con l'inserimento manuale?`,'Sì, inserisci',true);
+      if(proseguire) mostraFormProdotto({categoria:'Alimenti',tipo:'',modello:'',marca:''},1,1,codice);
     }
   }catch(e){
-    mostraFormProdotto({categoria:'Alimenti',tipo:'',modello:'',marca:''},1,1,codice);
-    toast('⚠️ Errore ricerca online — completa i dati manualmente');
+    const proseguire=await conferma(`Errore di ricerca online. Procedere con l'inserimento manuale?`,'Sì, inserisci',true);
+    if(proseguire) mostraFormProdotto({categoria:'Alimenti',tipo:'',modello:'',marca:''},1,1,codice);
   }
 }
 
