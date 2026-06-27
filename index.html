@@ -1203,7 +1203,7 @@ function statoScadenza(dataScad){
 
 function aggiornaBadgeDispensa(){
   let count=0;
-  dispensaItems.forEach(i=>{
+  dispensaItems.filter(i=>i.stato==='chiuso'||i.stato==='uso').forEach(i=>{
     const scad=scadenzaEffettiva(i);
     const st=statoScadenza(scad);
     if(st==='warn'||st==='expired') count++;
@@ -1216,6 +1216,7 @@ function aggiornaBadgeDispensa(){
 function renderDispensa(){
   const el=document.getElementById('dispensa-list');
   const filtered=dispensaItems.filter(i=>i.stato===(dispensaView==='dispensa'?'chiuso':'uso'));
+  // gli stati "archiviato" sono esclusi automaticamente dal filtro sopra (non sono né 'chiuso' né 'uso')
   if(!filtered.length){el.innerHTML='<div class="empty">Nessun prodotto</div>';return;}
 
   if(dispensaView==='uso'){
@@ -1347,10 +1348,12 @@ async function eliminaLotto(id){
   if(!item) return;
   const ok=await conferma(`Eliminare "${item.nome}" dalla dispensa?`,'Elimina',false);
   if(!ok) return;
-  dispensaItems=dispensaItems.filter(i=>i.id!==id);
+  item.stato='archiviato';
   renderDispensa();aggiornaBadgeDispensa();
-  try{await api({action:'delete',foglio:'Dispensa',id});toast('Prodotto eliminato');}
-  catch(e){toast('❌ Errore eliminazione');}
+  try{
+    await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'archiviato',scadenza:item.scadenza,tiposcad:item.tiposcad,dataapertura:item.dataapertura,persona:currentUser,tipo:item.tipo,modello:item.modello,marca:item.marca});
+    toast('Prodotto eliminato');
+  }catch(e){toast('❌ Errore eliminazione');}
 }
 
 async function segnaTerminato(id){
@@ -1358,10 +1361,10 @@ async function segnaTerminato(id){
   if(!item) return;
   const ok=await conferma(`"${item.nome}" è terminato?`,'Sì, terminato',true);
   if(!ok) return;
-  dispensaItems=dispensaItems.filter(i=>i.id!==id);
+  item.stato='archiviato';
   renderDispensa();aggiornaBadgeDispensa();
   try{
-    await api({action:'delete',foglio:'Dispensa',id});
+    await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'archiviato',scadenza:item.scadenza,tiposcad:item.tiposcad,dataapertura:item.dataapertura,persona:currentUser,tipo:item.tipo,modello:item.modello,marca:item.marca});
     // verifica se già presente in lista della spesa
     await ricaricaSpesaSilenzioso();
     const giaPresente=listaSpesa.some(x=>!x.done&&x.text.toLowerCase().includes(item.nome.toLowerCase()));
