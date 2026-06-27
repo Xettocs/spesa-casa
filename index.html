@@ -1482,12 +1482,23 @@ async function avviaScanner(){
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);
     zxingReader=new ZXing.BrowserMultiFormatReader(hints);
 
+    // Richiede esplicitamente il permesso fotocamera PRIMA di elencare i device
+    // (su iOS Safari, listVideoInputDevices() può fallire senza un permesso già concesso)
+    let stream;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+    }catch(permErr){
+      toast('❌ Permesso fotocamera negato o non disponibile');
+      return;
+    }
+    // ferma subito lo stream di "test": ZXing ne aprirà uno suo sul device scelto
+    stream.getTracks().forEach(t=>t.stop());
+
     const devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
     if(!devices.length){
       toast('❌ Nessuna fotocamera trovata');
       return;
     }
-    // preferisci la fotocamera posteriore se disponibile
     const back=devices.find(d=>/back|rear|environment/i.test(d.label));
     const deviceId=(back||devices[devices.length-1]).deviceId;
 
@@ -1500,7 +1511,6 @@ async function avviaScanner(){
         chiudiEdit();
         await gestisciCodiceScansionato(codice);
       }
-      // se err esiste ma nessun risultato, continua a scansionare (comportamento normale frame-by-frame)
     });
   }catch(e){
     toast('❌ Impossibile accedere alla fotocamera');
