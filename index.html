@@ -1537,56 +1537,34 @@ function chiudiScannerEEdit(){
 
 async function avviaScanner(){
   try{
-    const formats=[
-      ZXing.BarcodeFormat.EAN_13,
-      ZXing.BarcodeFormat.EAN_8,
-      ZXing.BarcodeFormat.UPC_A,
-      ZXing.BarcodeFormat.UPC_E,
-      ZXing.BarcodeFormat.CODE_128
-    ];
-    const hints=new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-    zxingReader=new ZXing.BrowserMultiFormatReader(hints,300);
-
     const videoEl=document.getElementById('scan-video');
     const statusEl=document.getElementById('scan-status');
+    if(statusEl) statusEl.textContent='1. Richiesta permesso...';
 
-    // Step 1: richiede il permesso fotocamera esplicitamente (mostra il popup iOS), con risoluzione alta e autofocus continuo
     let testStream;
     try{
-      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080},advanced:[{focusMode:'continuous'}]}});
+      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
     }catch(permErr){
-      // se i vincoli avanzati non sono supportati, riprova con vincoli base
+      if(statusEl) statusEl.textContent='2. Fallback vincoli base...';
       try{
         testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
       }catch(permErr2){
         toast('❌ Permesso fotocamera negato: '+(permErr2.name||permErr2.message||'errore sconosciuto'));
-        if(statusEl) statusEl.textContent='Errore: '+(permErr2.name||permErr2.message||'sconosciuto');
+        if(statusEl) statusEl.textContent='Errore permesso: '+(permErr2.name||permErr2.message||'sconosciuto');
         return;
       }
     }
-    // Tentativo aggiuntivo: forza l'autofocus continuo sulla traccia video, se supportato
-    try{
-      const track=testStream.getVideoTracks()[0];
-      if(track && track.getCapabilities){
-        const caps=track.getCapabilities();
-        if(caps.focusMode && caps.focusMode.includes('continuous')){
-          await track.applyConstraints({advanced:[{focusMode:'continuous'}]});
-        }
-      }
-    }catch(focusErr){/* non bloccante */}
-    // ferma subito il test-stream: ci servirà solo per leggere le label delle fotocamere
+    if(statusEl) statusEl.textContent='3. Permesso ottenuto, fermo test-stream...';
     testStream.getTracks().forEach(t=>t.stop());
 
-    // Step 2: elenchiamo i device con l'API nativa del browser (non dipende da metodi specifici di ZXing)
+    if(statusEl) statusEl.textContent='4. Elenco fotocamere...';
     let devices;
     try{
       const allDevices=await navigator.mediaDevices.enumerateDevices();
       devices=allDevices.filter(d=>d.kind==='videoinput');
     }catch(devErr){
-      toast('❌ Errore elenco fotocamere: '+(devErr.message||devErr.name||'sconosciuto'));
-      if(statusEl) statusEl.textContent='Errore elenco fotocamere: '+(devErr.message||devErr.name||'sconosciuto');
+      toast('❌ Errore elenco fotocamere');
+      if(statusEl) statusEl.textContent='Errore elenco fotocamere: '+(devErr.message||'sconosciuto');
       return;
     }
     if(!devices.length){
@@ -1597,9 +1575,36 @@ async function avviaScanner(){
     const back=devices.find(d=>/back|rear|environment/i.test(d.label));
     const deviceId=(back||devices[devices.length-1]).deviceId;
 
-    if(statusEl) statusEl.textContent='Avvio scansione su: '+((back||devices[devices.length-1]).label||'fotocamera');
+    if(statusEl) statusEl.textContent='5. Creo reader ZXing...';
 
-    // Step 3: decodeFromVideoDevice gestisce internamente apertura stream + loop di scansione
+    let hints,formats;
+    try{
+      hints=new Map();
+      formats=[
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.UPC_E,
+        ZXing.BarcodeFormat.CODE_128
+      ];
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+    }catch(hintErr){
+      toast('❌ Errore configurazione formati: '+(hintErr.message||hintErr));
+      if(statusEl) statusEl.textContent='Errore config formati: '+(hintErr.message||hintErr);
+      return;
+    }
+
+    try{
+      zxingReader=new ZXingBrowser.BrowserMultiFormatReader(hints);
+    }catch(readerErr){
+      toast('❌ Errore creazione reader: '+(readerErr.message||readerErr));
+      if(statusEl) statusEl.textContent='Errore creazione reader: '+(readerErr.message||readerErr);
+      return;
+    }
+
+    if(statusEl) statusEl.textContent='6. Avvio decodeFromVideoDevice...';
+
     try{
       zxingReader.decodeFromVideoDevice(deviceId,videoEl,async(result,err,controls)=>{
         if(result){
@@ -1612,16 +1617,23 @@ async function avviaScanner(){
           return;
         }
         if(err && statusEl && !statusEl.dataset.errShown){
-          const msg=String(err.message||'');
-          const eNormale=/NotFound|Checksum|Format|No MultiFormat Readers were able to detect/i.test(msg)||/NotFound|Checksum|Format/i.test(String(err.name||''));
+          const msg=String(err.message||err.name||'');
+          const eNormale=/NotFound|Checksum|Format|No MultiFormat Readers/i.test(msg);
           if(!eNormale){
             statusEl.dataset.errShown='1';
-            const tipoCostruttore=(err.constructor&&err.constructor.name)||'sconosciuto';
-            statusEl.textContent='Tipo errore: '+tipoCostruttore+' | name: '+(err.name||'(vuoto)')+' | msg: '+(err.message||'(vuoto)');
-          } else {
-            statusEl.textContent='Scansione in corso... inquadra bene il codice';
+            statusEl.textContent='Errore durante scansione: '+msg;
+          } else if(!statusEl.dataset.scanningShown){
+            statusEl.dataset.scanningShown='1';
+            statusEl.textContent='7. Scansione attiva, inquadra il codice';
           }
         }
+      }).then(()=>{
+        if(statusEl && statusEl.textContent==='6. Avvio decodeFromVideoDevice...'){
+          statusEl.textContent='6b. decodeFromVideoDevice avviato (in attesa di frame)';
+        }
+      }).catch(decErrAsync=>{
+        toast('❌ Errore promise decodeFromVideoDevice: '+(decErrAsync.message||decErrAsync));
+        if(statusEl) statusEl.textContent='Errore promise decode: '+(decErrAsync.message||decErrAsync);
       });
     }catch(decErr){
       toast('❌ Errore avvio decodifica: '+(decErr.message||decErr.name||'sconosciuto'));
@@ -1630,7 +1642,7 @@ async function avviaScanner(){
   }catch(e){
     toast('❌ Impossibile accedere alla fotocamera: '+(e.message||e.name||'errore generico'));
     const statusEl2=document.getElementById('scan-status');
-    if(statusEl2) statusEl2.textContent='Errore: '+(e.message||e.name||'generico');
+    if(statusEl2) statusEl2.textContent='Errore generico: '+(e.message||e.name||'generico');
   }
 }
 
