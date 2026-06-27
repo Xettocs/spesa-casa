@@ -1517,31 +1517,35 @@ async function avviaScanner(){
     const hints=new Map();
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);
     hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-    zxingReader=new ZXing.BrowserMultiFormatReader(hints,300); // riprova ogni 300ms
+    zxingReader=new ZXing.BrowserMultiFormatReader(hints,300);
 
     const videoEl=document.getElementById('scan-video');
     const statusEl=document.getElementById('scan-status');
 
-    let stream;
+    // Step 1: richiede il permesso fotocamera esplicitamente (mostra il popup iOS)
+    let testStream;
     try{
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
     }catch(permErr){
       toast('❌ Permesso fotocamera negato o non disponibile');
       return;
     }
-    videoEl.srcObject=stream;
-    videoEl.setAttribute('playsinline',true);
-    await videoEl.play();
+    // ferma subito il test-stream: ci servirà solo per leggere le label delle fotocamere
+    testStream.getTracks().forEach(t=>t.stop());
 
-    // attende che il video abbia dimensioni reali prima di iniziare la decodifica
-    await new Promise(res=>{
-      if(videoEl.videoWidth>0) return res();
-      videoEl.onloadedmetadata=()=>res();
-    });
+    // Step 2: ora che il permesso è concesso, elenchiamo i device con le label corrette
+    const devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
+    if(!devices.length){
+      toast('❌ Nessuna fotocamera trovata');
+      return;
+    }
+    const back=devices.find(d=>/back|rear|environment/i.test(d.label));
+    const deviceId=(back||devices[devices.length-1]).deviceId;
 
     if(statusEl) statusEl.textContent='Scansione in corso...';
 
-    zxingReader.decodeFromVideoElement(videoEl,async(result,err,controls)=>{
+    // Step 3: decodeFromVideoDevice gestisce internamente apertura stream + loop di scansione
+    zxingReader.decodeFromVideoDevice(deviceId,videoEl,async(result,err,controls)=>{
       if(result){
         const codice=result.getText();
         if(statusEl) statusEl.textContent='✓ Codice rilevato: '+codice;
@@ -1551,8 +1555,6 @@ async function avviaScanner(){
         await gestisciCodiceScansionato(codice);
         return;
       }
-      // err di tipo "not found" è normale tra un frame e l'altro: il reader continua da solo.
-      // Se invece l'errore è di altro tipo (es. permessi/stream), lo segnaliamo.
       if(err && err.name && err.name!=='NotFoundException' && err.name!=='ChecksumException' && err.name!=='FormatException'){
         if(statusEl) statusEl.textContent='Errore scanner: '+err.name;
       }
