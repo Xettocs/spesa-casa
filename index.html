@@ -1603,8 +1603,13 @@ async function avviaScanner(){
             else nomeErr=JSON.stringify(err);
           }catch(_){nomeErr='[errore non leggibile]';}
           const eNormale=/NotFound|Checksum|Format/i.test(nomeErr);
-          if(!eNormale && statusEl) statusEl.textContent='Errore scanner: '+nomeErr;
-          else if(statusEl) statusEl.textContent='Scansione in corso...';
+          if(!eNormale){
+            if(statusEl && !statusEl.dataset.errShown){
+              statusEl.textContent='Errore scanner: '+nomeErr;
+              statusEl.dataset.errShown='1';
+              console.log('SCANNER ERROR RAW:',err);
+            }
+          }
         }
       });
     }catch(decErr){
