@@ -1164,7 +1164,8 @@ async function ricaricaDispensa(){
     const data=await api({action:'read',foglio:'Dispensa'});
     dispensaItems=(data.dati||[]).slice(1).filter(r=>r[0]).map(r=>({
       id:String(r[0]),codice:r[1]||'',nome:r[2],cat:r[3]||'',stato:r[4]||'chiuso',
-      scadenza:r[5]||'',tiposcad:r[6]||'',dataapertura:r[7]||'',persona:r[8]||''
+      scadenza:r[5]||'',tiposcad:r[6]||'',dataapertura:r[7]||'',persona:r[8]||'',
+      tipo:r[9]||'',modello:r[10]||'',marca:r[11]||''
     }));
   }catch(e){toast('❌ Errore caricamento dispensa');}
   renderDispensa();
@@ -1318,7 +1319,7 @@ async function confermaApriLotto(id,eraUltimo){
   chiudiEdit();
   const oggi=new Date().toISOString().split('T')[0];
   try{
-    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'uso',scadenza:item.scadenza,tiposcad,dataapertura:oggi,persona:currentUser});
+    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'uso',scadenza:item.scadenza,tiposcad,dataapertura:oggi,persona:currentUser,tipo:item.tipo,modello:item.modello,marca:item.marca});
     if(res.errore) throw new Error();
     item.stato='uso';item.tiposcad=tiposcad;item.dataapertura=oggi;
     renderDispensa();aggiornaBadgeDispensa();
@@ -1381,39 +1382,74 @@ async function aggiungiAllaListaDaDispensa(nome){
 }
 
 function apriAggiungiManualeDispensa(){
+  mostraFormProdotto({},1,1,null);
+}
+
+function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
   apriEdit(`
-    <h3><i class="ti ti-plus"></i> Aggiungi prodotto</h3>
-    <label>Nome prodotto</label>
-    <input type="text" id="disp-nome" placeholder="es. Pasta Barilla">
+    <h3><i class="ti ti-plus"></i> Aggiungi prodotto ${paccoTotale>1?`(confezione ${paccoAttuale} di ${paccoTotale})`:''}</h3>
     <label>Categoria</label>
-    <select id="disp-cat">
-      <option value="Alimentare">🍽️ Alimentare</option>
-      <option value="Cosmetico">🧴 Cosmetico</option>
-      <option value="Altro">📦 Altro</option>
+    <select id="disp-categoria" onchange="aggiornaCampiProdotto()">
+      <option value="Alimenti" ${base.categoria==='Alimenti'||!base.categoria?'selected':''}>🍽️ Alimenti</option>
+      <option value="Cosmetici" ${base.categoria==='Cosmetici'?'selected':''}>🧴 Cosmetici</option>
+      <option value="Prodotti per la casa" ${base.categoria==='Prodotti per la casa'?'selected':''}>🏠 Prodotti per la casa</option>
+      <option value="Altro" ${base.categoria==='Altro'?'selected':''}>📦 Altro</option>
     </select>
-    <label>Scadenza (opzionale)</label>
-    <input type="date" id="disp-scadenza">
+    <label>Tipo</label>
+    <input type="text" id="disp-tipo" placeholder="es. Pasta, Dentifricio, Acqua..." value="${esc(base.tipo||'')}">
+    <label>Modello</label>
+    <input type="text" id="disp-modello" placeholder="es. Spaghetti, Rigenerante, Naturale..." value="${esc(base.modello||'')}">
+    <label>Marca</label>
+    <input type="text" id="disp-marca" placeholder="es. Barilla, Oral B, Sant'Anna..." value="${esc(base.marca||'')}">
+    ${paccoAttuale===1?`
+    <label>Quantità (numero confezioni)</label>
+    <input type="number" id="disp-quantita" min="1" value="${base.quantita||1}">
+    `:''}
+    <label>Scadenza confezione ${paccoAttuale}${paccoTotale>1?` di ${paccoTotale}`:''} (opzionale)</label>
+    <input type="date" id="disp-scadenza" value="${base.scadenza||''}">
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
-      <button type="button" class="edit-save" onclick="salvaAggiungiManualeDispensa()">Aggiungi</button>
+      <button type="button" class="edit-save" onclick="salvaPaccoProdotto(${paccoAttuale},${paccoTotale},'${codiceEsistente||''}')">${paccoAttuale<paccoTotale?'Salva e continua →':'Salva'}</button>
     </div>
   `);
 }
 
-async function salvaAggiungiManualeDispensa(){
-  const nome=document.getElementById('disp-nome').value.trim();
-  const cat=document.getElementById('disp-cat').value;
+function aggiornaCampiProdotto(){
+  // hook per eventuali suggerimenti futuri in base a categoria (placeholder)
+}
+
+async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
+  const categoria=document.getElementById('disp-categoria').value;
+  const tipo=document.getElementById('disp-tipo').value.trim();
+  const modello=document.getElementById('disp-modello').value.trim();
+  const marca=document.getElementById('disp-marca').value.trim();
   const scadenza=document.getElementById('disp-scadenza').value;
-  if(!nome){toast('⚠️ Inserisci il nome del prodotto');return;}
-  chiudiEdit();
-  const id=String(Date.now());
+  if(!tipo){toast('⚠️ Inserisci almeno il Tipo del prodotto');return;}
+
+  let quantita=paccoTotale;
+  if(paccoAttuale===1){
+    quantita=parseInt(document.getElementById('disp-quantita').value)||1;
+    if(quantita<1) quantita=1;
+  }
+
+  // Costruisce il nome visualizzato combinando i campi compilati
+  const nome=[marca,tipo,modello].filter(Boolean).join(' ')||tipo;
+
+  const id=String(Date.now())+'_'+paccoAttuale;
   try{
-    const res=await api({action:'add',foglio:'Dispensa',id,codice:'',nome,cat,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
+    const res=await api({action:'add',foglio:'Dispensa',id,codice:codiceEsistente||'',nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
     if(res.errore) throw new Error();
-    dispensaItems.push({id,codice:'',nome,cat,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
+    dispensaItems.push({id,codice:codiceEsistente||'',nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
+  }catch(e){toast('❌ Errore salvataggio');return;}
+
+  if(paccoAttuale<quantita){
+    // passa alla confezione successiva, riusando gli stessi dati anagrafici ma scadenza vuota
+    mostraFormProdotto({categoria,tipo,modello,marca,quantita},paccoAttuale+1,quantita,codiceEsistente);
+  } else {
+    chiudiEdit();
     renderDispensa();aggiornaBadgeDispensa();
-    toast('✓ Prodotto aggiunto alla dispensa');
-  }catch(e){toast('❌ Errore salvataggio');}
+    toast(`✓ ${quantita>1?quantita+' confezioni':'Prodotto'} aggiunte alla dispensa`);
+  }
 }
 
 function apriImpostazioniDispensa(){
@@ -1482,8 +1518,10 @@ async function avviaScanner(){
     hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);
     zxingReader=new ZXing.BrowserMultiFormatReader(hints);
 
-    // Richiede esplicitamente il permesso fotocamera PRIMA di elencare i device
-    // (su iOS Safari, listVideoInputDevices() può fallire senza un permesso già concesso)
+    const videoEl=document.getElementById('scan-video');
+
+    // Richiede il permesso fotocamera e usa DIRETTAMENTE questo stream
+    // (su iOS Safari aprire un secondo stream subito dopo aver chiuso il primo spesso fallisce)
     let stream;
     try{
       stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
@@ -1491,19 +1529,10 @@ async function avviaScanner(){
       toast('❌ Permesso fotocamera negato o non disponibile');
       return;
     }
-    // ferma subito lo stream di "test": ZXing ne aprirà uno suo sul device scelto
-    stream.getTracks().forEach(t=>t.stop());
+    videoEl.srcObject=stream;
+    await videoEl.play();
 
-    const devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
-    if(!devices.length){
-      toast('❌ Nessuna fotocamera trovata');
-      return;
-    }
-    const back=devices.find(d=>/back|rear|environment/i.test(d.label));
-    const deviceId=(back||devices[devices.length-1]).deviceId;
-
-    const videoEl=document.getElementById('scan-video');
-    zxingReader.decodeFromVideoDevice(deviceId,videoEl,async(result,err,controls)=>{
+    zxingReader.decodeFromVideoElement(videoEl,async(result,err,controls)=>{
       if(result){
         const codice=result.getText();
         controls.stop();
@@ -1519,7 +1548,6 @@ async function avviaScanner(){
 
 function fermaScanner(){
   if(zxingReader){
-    try{zxingReader.stopContinuousDecode();}catch(e){}
     try{zxingReader.reset();}catch(e){}
     zxingReader=null;
   }
@@ -1531,19 +1559,10 @@ function fermaScanner(){
 }
 
 async function gestisciCodiceScansionato(codice){
-  // 1. cerca nel foglio Dispensa (anche tra quelli già usati/eliminati non serve, cerchiamo per nome noto)
+  // 1. cerca nel foglio Dispensa (prodotto già scansionato in passato)
   const trovato=dispensaItems.find(i=>i.codice===codice);
   if(trovato){
-    apriEdit(`
-      <h3><i class="ti ti-package"></i> Prodotto trovato</h3>
-      <p style="font-size:13px;color:#888780;margin-bottom:10px">${esc(trovato.nome)}</p>
-      <label>Scadenza (opzionale)</label>
-      <input type="date" id="scan-scadenza">
-      <div class="edit-btns">
-        <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
-        <button type="button" class="edit-save" onclick="salvaProdottoScansionato('${esc(trovato.nome)}','${codice}','${trovato.cat}')">Aggiungi alla dispensa</button>
-      </div>
-    `);
+    mostraFormProdotto({categoria:trovato.cat,tipo:trovato.tipo,modello:trovato.modello,marca:trovato.marca},1,1,codice);
     return;
   }
   // 2. cerca su Open Food Facts
@@ -1552,72 +1571,22 @@ async function gestisciCodiceScansionato(codice){
     const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json`);
     const data=await r.json();
     if(data.status===1&&data.product){
-      const nome=data.product.product_name||data.product.product_name_it||'Prodotto senza nome';
-      apriEdit(`
-        <h3><i class="ti ti-package"></i> Prodotto trovato online</h3>
-        <p style="font-size:13px;color:#888780;margin-bottom:10px">${esc(nome)}</p>
-        <label>Categoria</label>
-        <select id="scan-cat">
-          <option value="Alimentare">🍽️ Alimentare</option>
-          <option value="Cosmetico">🧴 Cosmetico</option>
-          <option value="Altro">📦 Altro</option>
-        </select>
-        <label>Scadenza (opzionale)</label>
-        <input type="date" id="scan-scadenza">
-        <div class="edit-btns">
-          <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
-          <button type="button" class="edit-save" onclick="salvaProdottoScansionatoConCat('${esc(nome)}','${codice}')">Aggiungi alla dispensa</button>
-        </div>
-      `);
+      const nomeCompleto=data.product.product_name||data.product.product_name_it||'';
+      const marca=data.product.brands?data.product.brands.split(',')[0].trim():'';
+      // tentativo di separare marca dal resto del nome
+      let tipo=nomeCompleto;
+      if(marca&&nomeCompleto.toLowerCase().startsWith(marca.toLowerCase())){
+        tipo=nomeCompleto.substring(marca.length).trim();
+      }
+      mostraFormProdotto({categoria:'Alimenti',tipo:tipo||nomeCompleto||'Prodotto',modello:'',marca},1,1,codice);
     }else{
-      apriEdit(`
-        <h3><i class="ti ti-package"></i> Prodotto non trovato</h3>
-        <p style="font-size:13px;color:#888780;margin-bottom:10px">Codice: ${codice}. Inserisci il nome manualmente.</p>
-        <label>Nome prodotto</label>
-        <input type="text" id="scan-nome" placeholder="es. Pasta Barilla">
-        <label>Categoria</label>
-        <select id="scan-cat">
-          <option value="Alimentare">🍽️ Alimentare</option>
-          <option value="Cosmetico">🧴 Cosmetico</option>
-          <option value="Altro">📦 Altro</option>
-        </select>
-        <label>Scadenza (opzionale)</label>
-        <input type="date" id="scan-scadenza">
-        <div class="edit-btns">
-          <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
-          <button type="button" class="edit-save" onclick="salvaProdottoManualeConCodice('${codice}')">Aggiungi alla dispensa</button>
-        </div>
-      `);
+      mostraFormProdotto({categoria:'Alimenti',tipo:'',modello:'',marca:''},1,1,codice);
+      toast('⚠️ Prodotto non trovato online — completa i dati manualmente');
     }
-  }catch(e){toast('❌ Errore ricerca online — inserisci manualmente');}
-}
-
-async function salvaProdottoScansionato(nome,codice,cat){
-  const scadenza=document.getElementById('scan-scadenza').value;
-  await _salvaNuovoProdottoDispensa(nome,codice,cat,scadenza);
-}
-async function salvaProdottoScansionatoConCat(nome,codice){
-  const cat=document.getElementById('scan-cat').value;
-  const scadenza=document.getElementById('scan-scadenza').value;
-  await _salvaNuovoProdottoDispensa(nome,codice,cat,scadenza);
-}
-async function salvaProdottoManualeConCodice(codice){
-  const nome=document.getElementById('scan-nome').value.trim();
-  const cat=document.getElementById('scan-cat').value;
-  const scadenza=document.getElementById('scan-scadenza').value;
-  if(!nome){toast('⚠️ Inserisci il nome del prodotto');return;}
-  await _salvaNuovoProdottoDispensa(nome,codice,cat,scadenza);
-}
-async function _salvaNuovoProdottoDispensa(nome,codice,cat,scadenza){
-  chiudiEdit();
-  const id=String(Date.now());
-  try{
-    const res=await api({action:'add',foglio:'Dispensa',id,codice,nome,cat,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
-    if(res.errore) throw new Error();
-    dispensaItems.push({id,codice,nome,cat,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
-    renderDispensa();aggiornaBadgeDispensa();
-    toast('✓ Prodotto aggiunto alla dispensa');
-  }catch(e){toast('❌ Errore salvataggio');}
+  }catch(e){
+    mostraFormProdotto({categoria:'Alimenti',tipo:'',modello:'',marca:''},1,1,codice);
+    toast('⚠️ Errore ricerca online — completa i dati manualmente');
+  }
 }
 
 // ---- INIT ----
