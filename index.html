@@ -1552,9 +1552,10 @@ async function avviaScanner(){
     // Step 1: richiede il permesso fotocamera esplicitamente (mostra il popup iOS)
     let testStream;
     try{
-      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+      testStream=await navigator.mediaDevices.getUserMedia({video:true});
     }catch(permErr){
-      toast('❌ Permesso fotocamera negato o non disponibile');
+      toast('❌ Permesso fotocamera negato: '+(permErr.name||permErr.message||'errore sconosciuto'));
+      if(statusEl) statusEl.textContent='Errore: '+(permErr.name||permErr.message||'sconosciuto');
       return;
     }
     // ferma subito il test-stream: ci servirà solo per leggere le label delle fotocamere
