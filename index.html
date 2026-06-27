@@ -1296,14 +1296,24 @@ async function apriLotto(id){
   apriEdit(`
     <h3><i class="ti ti-package"></i> Apri prodotto</h3>
     <p style="font-size:13px;color:#888780;margin-bottom:10px">${esc(item.nome)}${item.scadenza?' · Scad. '+formatDataIt(item.scadenza):''}</p>
+    <label>Data apertura</label>
+    <input type="date" id="apri-data" value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}">
+    <p style="font-size:11px;color:#888780;margin-top:2px">Lascia oggi se lo stai aprendo ora, oppure indica la data reale se l'hai già aperto in precedenza</p>
     <label>Scadenza dopo apertura (opzionale)</label>
     <select id="apri-tiposcad">
-      <option value="">— Nessuna regola particolare —</option>
-      <option value="1">1 mese dopo apertura</option>
-      <option value="2">2 mesi dopo apertura</option>
-      <option value="3">3 mesi dopo apertura</option>
-      <option value="6">6 mesi dopo apertura</option>
-      <option value="12">12 mesi dopo apertura</option>
+      <option value="" ${!item.tiposcad?'selected':''}>— Nessuna regola particolare —</option>
+      <option value="1" ${item.tiposcad==='1'?'selected':''}>1 mese dopo apertura</option>
+      <option value="2" ${item.tiposcad==='2'?'selected':''}>2 mesi dopo apertura</option>
+      <option value="3" ${item.tiposcad==='3'?'selected':''}>3 mesi dopo apertura</option>
+      <option value="4" ${item.tiposcad==='4'?'selected':''}>4 mesi dopo apertura</option>
+      <option value="5" ${item.tiposcad==='5'?'selected':''}>5 mesi dopo apertura</option>
+      <option value="6" ${item.tiposcad==='6'?'selected':''}>6 mesi dopo apertura</option>
+      <option value="7" ${item.tiposcad==='7'?'selected':''}>7 mesi dopo apertura</option>
+      <option value="8" ${item.tiposcad==='8'?'selected':''}>8 mesi dopo apertura</option>
+      <option value="9" ${item.tiposcad==='9'?'selected':''}>9 mesi dopo apertura</option>
+      <option value="10" ${item.tiposcad==='10'?'selected':''}>10 mesi dopo apertura</option>
+      <option value="11" ${item.tiposcad==='11'?'selected':''}>11 mesi dopo apertura</option>
+      <option value="12" ${item.tiposcad==='12'?'selected':''}>12 mesi dopo apertura</option>
     </select>
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
@@ -1316,12 +1326,12 @@ async function confermaApriLotto(id,eraUltimo){
   const item=dispensaItems.find(i=>i.id===id);
   if(!item) return;
   const tiposcad=document.getElementById('apri-tiposcad').value;
+  const dataApertura=document.getElementById('apri-data').value||new Date().toISOString().split('T')[0];
   chiudiEdit();
-  const oggi=new Date().toISOString().split('T')[0];
   try{
-    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'uso',scadenza:item.scadenza,tiposcad,dataapertura:oggi,persona:currentUser,tipo:item.tipo,modello:item.modello,marca:item.marca});
+    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'uso',scadenza:item.scadenza,tiposcad,dataapertura:dataApertura,persona:currentUser,tipo:item.tipo,modello:item.modello,marca:item.marca});
     if(res.errore) throw new Error();
-    item.stato='uso';item.tiposcad=tiposcad;item.dataapertura=oggi;
+    item.stato='uso';item.tiposcad=tiposcad;item.dataapertura=dataApertura;
     renderDispensa();aggiornaBadgeDispensa();
     toast('✓ Prodotto aperto, spostato in "In Uso"');
     if(eraUltimo){
@@ -1407,6 +1417,22 @@ function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
     `:''}
     <label>Scadenza confezione ${paccoAttuale}${paccoTotale>1?` di ${paccoTotale}`:''} (opzionale)</label>
     <input type="date" id="disp-scadenza" value="${base.scadenza||''}">
+    <label>Scadenza dopo apertura (opzionale)</label>
+    <select id="disp-tiposcad">
+      <option value="" ${!base.tiposcad?'selected':''}>— Nessuna regola particolare —</option>
+      <option value="1" ${base.tiposcad==='1'?'selected':''}>1 mese dopo apertura</option>
+      <option value="2" ${base.tiposcad==='2'?'selected':''}>2 mesi dopo apertura</option>
+      <option value="3" ${base.tiposcad==='3'?'selected':''}>3 mesi dopo apertura</option>
+      <option value="4" ${base.tiposcad==='4'?'selected':''}>4 mesi dopo apertura</option>
+      <option value="5" ${base.tiposcad==='5'?'selected':''}>5 mesi dopo apertura</option>
+      <option value="6" ${base.tiposcad==='6'?'selected':''}>6 mesi dopo apertura</option>
+      <option value="7" ${base.tiposcad==='7'?'selected':''}>7 mesi dopo apertura</option>
+      <option value="8" ${base.tiposcad==='8'?'selected':''}>8 mesi dopo apertura</option>
+      <option value="9" ${base.tiposcad==='9'?'selected':''}>9 mesi dopo apertura</option>
+      <option value="10" ${base.tiposcad==='10'?'selected':''}>10 mesi dopo apertura</option>
+      <option value="11" ${base.tiposcad==='11'?'selected':''}>11 mesi dopo apertura</option>
+      <option value="12" ${base.tiposcad==='12'?'selected':''}>12 mesi dopo apertura</option>
+    </select>
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
       <button type="button" class="edit-save" onclick="salvaPaccoProdotto(${paccoAttuale},${paccoTotale},'${codiceEsistente||''}')">${paccoAttuale<paccoTotale?'Salva e continua →':'Salva'}</button>
@@ -1424,6 +1450,7 @@ async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
   const modello=document.getElementById('disp-modello').value.trim();
   const marca=document.getElementById('disp-marca').value.trim();
   const scadenza=document.getElementById('disp-scadenza').value;
+  const tiposcad=document.getElementById('disp-tiposcad').value;
   if(!tipo){toast('⚠️ Inserisci almeno il Tipo del prodotto');return;}
 
   let quantita=paccoTotale;
@@ -1437,14 +1464,14 @@ async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
 
   const id=String(Date.now())+'_'+paccoAttuale;
   try{
-    const res=await api({action:'add',foglio:'Dispensa',id,codice:codiceEsistente||'',nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
+    const res=await api({action:'add',foglio:'Dispensa',id,codice:codiceEsistente||'',nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
     if(res.errore) throw new Error();
-    dispensaItems.push({id,codice:codiceEsistente||'',nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
+    dispensaItems.push({id,codice:codiceEsistente||'',nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
   }catch(e){toast('❌ Errore salvataggio');return;}
 
   if(paccoAttuale<quantita){
-    // passa alla confezione successiva, riusando gli stessi dati anagrafici ma scadenza vuota
-    mostraFormProdotto({categoria,tipo,modello,marca,quantita},paccoAttuale+1,quantita,codiceEsistente);
+    // passa alla confezione successiva, riusando gli stessi dati anagrafici (incluso tiposcad) ma scadenza vuota
+    mostraFormProdotto({categoria,tipo,modello,marca,quantita,tiposcad},paccoAttuale+1,quantita,codiceEsistente);
   } else {
     chiudiEdit();
     renderDispensa();aggiornaBadgeDispensa();
