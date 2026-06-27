@@ -1595,19 +1595,14 @@ async function avviaScanner(){
           return;
         }
         if(err && statusEl && !statusEl.dataset.errShown){
-          statusEl.dataset.errShown='1';
-          window.__lastScanErr=err;
-          console.log('SCANNER ERROR RAW OBJECT:',err);
-          console.log('typeof err:',typeof err);
-          console.log('err.constructor.name:',err&&err.constructor?err.constructor.name:'n/a');
-          console.log('err.name:',err&&err.name);
-          console.log('err.message:',err&&err.message);
-          const tipoCostruttore=(err&&err.constructor&&err.constructor.name)||'sconosciuto';
-          const eNormale=/NotFound|Checksum|Format/i.test(tipoCostruttore)||/NotFound|Checksum|Format/i.test(String(err&&err.name||''));
+          const msg=String(err.message||'');
+          const eNormale=/NotFound|Checksum|Format|No MultiFormat Readers were able to detect/i.test(msg)||/NotFound|Checksum|Format/i.test(String(err.name||''));
           if(!eNormale){
+            statusEl.dataset.errShown='1';
+            const tipoCostruttore=(err.constructor&&err.constructor.name)||'sconosciuto';
             statusEl.textContent='Tipo errore: '+tipoCostruttore+' | name: '+(err.name||'(vuoto)')+' | msg: '+(err.message||'(vuoto)');
           } else {
-            statusEl.dataset.errShown='';
+            statusEl.textContent='Scansione in corso... inquadra bene il codice';
           }
         }
       });
