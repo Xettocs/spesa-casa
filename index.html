@@ -19,7 +19,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .header p{font-size:12px;color:#888780;margin-top:2px}
 .tabs{display:flex;background:#fff;border-bottom:0.5px solid #d3d1c7;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex:0 0 auto;padding:10px 12px;text-align:center;font-size:11px;font-weight:500;cursor:pointer;color:#888780;border-bottom:2px solid transparent;white-space:nowrap}
+.tab{flex:0 0 auto;padding:10px 12px;text-align:center;font-size:11px;font-weight:500;cursor:pointer;color:#888780;border-bottom:2px solid transparent;white-space:nowrap;position:relative}
+.tab-badge{position:absolute;top:2px;right:2px;background:#C0392B;color:#fff;font-size:9px;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;font-weight:600}
 .tab.active{color:#534AB7;border-bottom-color:#534AB7}
 .content{padding:14px;max-width:480px;margin:0 auto}
 .section{display:none}.section.active{display:block}
@@ -102,6 +103,29 @@ select:focus,input:focus{border-color:#534AB7}
 .edit-btns button{flex:1;padding:10px;border-radius:8px;border:none;font-size:13px;font-weight:500;cursor:pointer}
 .edit-save{background:#534AB7;color:#fff}
 .edit-cancel{background:#f5f4f0;color:#1a1a18}
+/* Dispensa */
+.pantry-card{background:#fff;border-radius:10px;border:0.5px solid #d3d1c7;padding:11px 12px;margin-bottom:8px}
+.pantry-card.warn{background:#FFF8E1;border-color:#F1C40F}
+.pantry-card.expired{background:#FCEBEB;border-color:#C0392B}
+.pantry-top{display:flex;align-items:center;gap:8px}
+.pantry-name{flex:1;min-width:0;font-size:13px;font-weight:500}
+.pantry-name.expired-text{color:#C0392B;font-weight:600}
+.pantry-name.warn-text{color:#B8860B}
+.pantry-sub{font-size:11px;color:#888780;margin-top:2px}
+.pantry-actions{display:flex;gap:4px;flex-shrink:0}
+.pantry-btn{background:none;border:0.5px solid #d3d1c7;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;color:#534AB7;font-weight:500;display:flex;align-items:center;gap:3px}
+.pantry-btn.danger{color:#C0392B}
+.pantry-expand{background:none;border:none;color:#888780;cursor:pointer;font-size:11px;margin-top:6px;display:flex;align-items:center;gap:3px}
+.pantry-lot{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:0.5px dashed #e5e3da;margin-top:6px}
+.pantry-lot-info{flex:1;font-size:12px;color:#666}
+.scan-box{background:#1a1a18;border-radius:12px;overflow:hidden;position:relative;margin-bottom:12px}
+.scan-box video{width:100%;display:block}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-frame{width:70%;height:90px;border:2px solid #1D9E75;border-radius:8px}
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
+.tab-cat{display:flex;border-radius:8px;overflow:hidden;border:0.5px solid #d3d1c7;margin-bottom:10px}
+.tab-cat-item{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:#888780}
+.tab-cat-item.active{background:#534AB7;color:#fff}
 /* Confirm dialog */
 .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px}
 .confirm-box{background:#fff;border-radius:14px;padding:22px;max-width:300px;width:100%;text-align:center}
@@ -160,6 +184,7 @@ select:focus,input:focus{border-color:#534AB7}
   <div class="tab" onclick="switchTab('riepilogo')"><i class="ti ti-calculator"></i> Riepilogo</div>
   <div class="tab" onclick="switchTab('spesa')"><i class="ti ti-shopping-cart"></i> Spesa</div>
   <div class="tab" onclick="switchTab('todo')"><i class="ti ti-checkbox"></i> Da fare</div>
+  <div class="tab" id="tab-dispensa" onclick="switchTab('dispensa')"><i class="ti ti-fridge"></i> Dispensa<span class="tab-badge" id="dispensa-badge" style="display:none">0</span></div>
 </div>
 
 <div class="content">
@@ -377,6 +402,28 @@ select:focus,input:focus{border-color:#534AB7}
   </div>
 </div>
 
+<!-- DISPENSA -->
+<div class="section" id="sec-dispensa">
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between">
+      <span><i class="ti ti-fridge"></i> Dispensa</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-outline" style="width:auto;margin-top:0;padding:6px 10px;font-size:11px" onclick="apriImpostazioniDispensa()"><i class="ti ti-settings"></i></button>
+        <button class="btn btn-outline" style="width:auto;margin-top:0;padding:6px 10px;font-size:11px" onclick="ricaricaDispensa()"><i class="ti ti-refresh"></i></button>
+      </div>
+    </div>
+    <button class="btn" onclick="apriScanner()"><i class="ti ti-barcode"></i> Scansiona codice a barre</button>
+    <button class="btn btn-outline" onclick="apriAggiungiManualeDispensa()"><i class="ti ti-plus"></i> Aggiungi manualmente</button>
+  </div>
+  <div class="card">
+    <div class="tab-cat">
+      <div class="tab-cat-item active" id="disp-tab-dispensa" onclick="setDispensaView('dispensa')">In Dispensa</div>
+      <div class="tab-cat-item" id="disp-tab-uso" onclick="setDispensaView('uso')">In Uso</div>
+    </div>
+    <div id="dispensa-list"><div class="empty">Caricamento...</div></div>
+  </div>
+</div>
+
 </div>
 <div class="toast" id="toast"></div>
 
@@ -389,11 +436,14 @@ const PALETTE=['#534AB7','#1D9E75','#EF9F27','#378ADD','#D4537E','#639922','#888
 
 let PWD='', selectedPerson='Antonio', spesaPerson='Antonio', listaFiltro='Tutti';
 let currentUser='Antonio';
-let spese=[], listaSpesa=[], todoItems=[];
+let spese=[], listaSpesa=[], todoItems=[], dispensaItems=[];
 let chartA=null,chartB=null,chartC=null,chartCat=null;
 let graficoPeriod='mensile',graficoCursor=new Date();
 let riepilogoPeriod='mensile',riepilogoCursor=new Date();
 let salvando=false;
+let dispensaView='dispensa';
+let sogliaAvviso=7; // giorni, default
+let scannerStream=null, scannerLoopId=null;
 
 // ---- CONFIRM ----
 let _confirmResolve=null;
@@ -505,7 +555,7 @@ function popolaAnni(){
 
 // ---- TABS ----
 function switchTab(name){
-  const names=['aggiungi','lista','grafici','riepilogo','spesa','todo'];
+  const names=['aggiungi','lista','grafici','riepilogo','spesa','todo','dispensa'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
@@ -514,6 +564,7 @@ function switchTab(name){
   if(name==='riepilogo'){aggiornaRiepilogoLabel();renderRiepilogo();}
   if(name==='spesa') ricaricaSpesa();
   if(name==='todo') ricaricaTodo();
+  if(name==='dispensa') ricaricaDispensa();
 }
 
 // ---- SPESE ----
@@ -1093,6 +1144,450 @@ async function salvaEditTodo(id){
     i.text=text;i.date=date;i.ora=ora;i.person=person;
     renderTodo();toast('✓ Modificata');
   }catch(e){toast('❌ Errore modifica');}
+}
+
+// ---- DISPENSA ----
+function soglieGiorni(){
+  return parseInt(localStorage.getItem('sogliaAvviso')||'7');
+}
+
+function setDispensaView(v){
+  dispensaView=v;
+  document.getElementById('disp-tab-dispensa').classList.toggle('active',v==='dispensa');
+  document.getElementById('disp-tab-uso').classList.toggle('active',v==='uso');
+  renderDispensa();
+}
+
+async function ricaricaDispensa(){
+  document.getElementById('dispensa-list').innerHTML='<div class="empty"><span class="spinner"></span></div>';
+  try{
+    const data=await api({action:'read',foglio:'Dispensa'});
+    dispensaItems=(data.dati||[]).slice(1).filter(r=>r[0]).map(r=>({
+      id:String(r[0]),codice:r[1]||'',nome:r[2],cat:r[3]||'',stato:r[4]||'chiuso',
+      scadenza:r[5]||'',tiposcad:r[6]||'',dataapertura:r[7]||'',persona:r[8]||''
+    }));
+  }catch(e){toast('❌ Errore caricamento dispensa');}
+  renderDispensa();
+  aggiornaBadgeDispensa();
+}
+
+function scadenzaEffettiva(item){
+  // calcola scadenza considerando eventuale regola "X mesi dopo apertura"
+  if(item.stato==='uso'&&item.tiposcad&&item.dataapertura){
+    const m=parseInt(item.tiposcad);
+    if(!isNaN(m)){
+      const d=new Date(item.dataapertura);
+      d.setMonth(d.getMonth()+m);
+      const dopoApertura=d.toISOString().split('T')[0];
+      if(item.scadenza){
+        return dopoApertura<item.scadenza?dopoApertura:item.scadenza;
+      }
+      return dopoApertura;
+    }
+  }
+  return item.scadenza||'';
+}
+
+function statoScadenza(dataScad){
+  if(!dataScad) return 'normale';
+  const oggi=new Date();oggi.setHours(0,0,0,0);
+  const d=new Date(dataScad);
+  if(isNaN(d.getTime())) return 'normale';
+  const diffGiorni=Math.floor((d-oggi)/(1000*60*60*24));
+  if(diffGiorni<0) return 'expired';
+  if(diffGiorni<=soglieGiorni()) return 'warn';
+  return 'normale';
+}
+
+function aggiornaBadgeDispensa(){
+  let count=0;
+  dispensaItems.forEach(i=>{
+    const scad=scadenzaEffettiva(i);
+    const st=statoScadenza(scad);
+    if(st==='warn'||st==='expired') count++;
+  });
+  const badge=document.getElementById('dispensa-badge');
+  if(count>0){badge.style.display='flex';badge.textContent=count;}
+  else badge.style.display='none';
+}
+
+function renderDispensa(){
+  const el=document.getElementById('dispensa-list');
+  const filtered=dispensaItems.filter(i=>i.stato===(dispensaView==='dispensa'?'chiuso':'uso'));
+  if(!filtered.length){el.innerHTML='<div class="empty">Nessun prodotto</div>';return;}
+
+  if(dispensaView==='uso'){
+    // righe singole, non raggruppate
+    el.innerHTML=filtered.map(i=>{
+      const scad=scadenzaEffettiva(i);
+      const st=statoScadenza(scad);
+      const cls=st==='expired'?'expired':(st==='warn'?'warn':'');
+      const textCls=st==='expired'?'expired-text':(st==='warn'?'warn-text':'');
+      return `<div class="pantry-card ${cls}">
+        <div class="pantry-top">
+          <div>
+            <div class="pantry-name ${textCls}">${esc(i.nome)}</div>
+            <div class="pantry-sub">${scad?'Scade: '+formatDataIt(scad):'Nessuna scadenza'}${i.dataapertura?' · Aperto il '+formatDataIt(i.dataapertura):''}</div>
+          </div>
+        </div>
+        <div class="pantry-actions" style="margin-top:8px">
+          <button class="pantry-btn" onclick="segnaTerminato('${i.id}')"><i class="ti ti-check"></i> Terminato</button>
+        </div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  // vista "In Dispensa": raggruppa per nome
+  const gruppi={};
+  filtered.forEach(i=>{
+    if(!gruppi[i.nome]) gruppi[i.nome]=[];
+    gruppi[i.nome].push(i);
+  });
+  el.innerHTML=Object.keys(gruppi).map(nome=>{
+    const lotti=gruppi[nome].sort((a,b)=>(a.scadenza||'9999').localeCompare(b.scadenza||'9999'));
+    const principale=lotti[0];
+    const scad=principale.scadenza;
+    const st=statoScadenza(scad);
+    const cls=st==='expired'?'expired':(st==='warn'?'warn':'');
+    const textCls=st==='expired'?'expired-text':(st==='warn'?'warn-text':'');
+    const idsAltri=lotti.slice(1).map(l=>l.id).join(',');
+    const groupId='grp_'+principale.id;
+    return `<div class="pantry-card ${cls}">
+      <div class="pantry-top">
+        <div style="flex:1">
+          <div class="pantry-name ${textCls}">${esc(nome)}</div>
+          <div class="pantry-sub">${scad?'Scadenza più vicina: '+formatDataIt(scad):'Nessuna scadenza'} · Quantità: ${lotti.length}</div>
+        </div>
+        <div class="pantry-actions">
+          <button class="pantry-btn" onclick="apriLotto('${principale.id}')"><i class="ti ti-package"></i> Apri</button>
+          <button class="pantry-btn danger" onclick="eliminaLotto('${principale.id}')"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      ${lotti.length>1?`<div class="pantry-expand" onclick="toggleGruppo('${groupId}')"><i class="ti ti-chevron-down"></i> Vedi tutti i ${lotti.length} lotti</div>
+      <div id="${groupId}" style="display:none">
+        ${lotti.slice(1).map(l=>{
+          const stL=statoScadenza(l.scadenza);
+          const tClsL=stL==='expired'?'expired-text':(stL==='warn'?'warn-text':'');
+          return `<div class="pantry-lot">
+            <div class="pantry-lot-info ${tClsL}">${l.scadenza?'Scad. '+formatDataIt(l.scadenza):'Nessuna scadenza'}</div>
+            <button class="pantry-btn" onclick="apriLotto('${l.id}')"><i class="ti ti-package"></i></button>
+            <button class="pantry-btn danger" onclick="eliminaLotto('${l.id}')"><i class="ti ti-trash"></i></button>
+          </div>`;
+        }).join('')}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function toggleGruppo(id){
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+async function apriLotto(id){
+  const item=dispensaItems.find(i=>i.id===id);
+  if(!item) return;
+  // determina se è l'ultimo lotto chiuso di questo nome
+  const stessiNome=dispensaItems.filter(i=>i.nome===item.nome&&i.stato==='chiuso');
+  const eraUltimo=stessiNome.length===1;
+
+  apriEdit(`
+    <h3><i class="ti ti-package"></i> Apri prodotto</h3>
+    <p style="font-size:13px;color:#888780;margin-bottom:10px">${esc(item.nome)}${item.scadenza?' · Scad. '+formatDataIt(item.scadenza):''}</p>
+    <label>Scadenza dopo apertura (opzionale)</label>
+    <select id="apri-tiposcad">
+      <option value="">— Nessuna regola particolare —</option>
+      <option value="1">1 mese dopo apertura</option>
+      <option value="2">2 mesi dopo apertura</option>
+      <option value="3">3 mesi dopo apertura</option>
+      <option value="6">6 mesi dopo apertura</option>
+      <option value="12">12 mesi dopo apertura</option>
+    </select>
+    <div class="edit-btns">
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+      <button type="button" class="edit-save" onclick="confermaApriLotto('${id}',${eraUltimo})">Apri prodotto</button>
+    </div>
+  `);
+}
+
+async function confermaApriLotto(id,eraUltimo){
+  const item=dispensaItems.find(i=>i.id===id);
+  if(!item) return;
+  const tiposcad=document.getElementById('apri-tiposcad').value;
+  chiudiEdit();
+  const oggi=new Date().toISOString().split('T')[0];
+  try{
+    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'uso',scadenza:item.scadenza,tiposcad,dataapertura:oggi,persona:currentUser});
+    if(res.errore) throw new Error();
+    item.stato='uso';item.tiposcad=tiposcad;item.dataapertura=oggi;
+    renderDispensa();aggiornaBadgeDispensa();
+    toast('✓ Prodotto aperto, spostato in "In Uso"');
+    if(eraUltimo){
+      const ok=await conferma(`Hai aperto l'ultimo "${item.nome}". Aggiungerlo alla lista della spesa?`,'Sì, aggiungi',true);
+      if(ok) await aggiungiAllaListaDaDispensa(item.nome);
+    }
+  }catch(e){toast('❌ Errore');}
+}
+
+async function eliminaLotto(id){
+  const item=dispensaItems.find(i=>i.id===id);
+  if(!item) return;
+  const ok=await conferma(`Eliminare "${item.nome}" dalla dispensa?`,'Elimina',false);
+  if(!ok) return;
+  dispensaItems=dispensaItems.filter(i=>i.id!==id);
+  renderDispensa();aggiornaBadgeDispensa();
+  try{await api({action:'delete',foglio:'Dispensa',id});toast('Prodotto eliminato');}
+  catch(e){toast('❌ Errore eliminazione');}
+}
+
+async function segnaTerminato(id){
+  const item=dispensaItems.find(i=>i.id===id);
+  if(!item) return;
+  const ok=await conferma(`"${item.nome}" è terminato?`,'Sì, terminato',true);
+  if(!ok) return;
+  dispensaItems=dispensaItems.filter(i=>i.id!==id);
+  renderDispensa();aggiornaBadgeDispensa();
+  try{
+    await api({action:'delete',foglio:'Dispensa',id});
+    // verifica se già presente in lista della spesa
+    await ricaricaSpesaSilenzioso();
+    const giaPresente=listaSpesa.some(x=>!x.done&&x.text.toLowerCase().includes(item.nome.toLowerCase()));
+    if(!giaPresente){
+      const ok2=await conferma(`"${item.nome}" è terminato. Aggiungerlo alla lista della spesa?`,'Sì, aggiungi',true);
+      if(ok2) await aggiungiAllaListaDaDispensa(item.nome);
+    } else {
+      toast('✓ Terminato (già presente in lista spesa)');
+    }
+  }catch(e){toast('❌ Errore');}
+}
+
+async function ricaricaSpesaSilenzioso(){
+  try{
+    const data=await api({action:'read',foglio:'Acquisti'});
+    listaSpesa=(data.dati||[]).slice(1).filter(r=>r[0]).map(r=>({id:String(r[0]),text:r[1],qty:r[2]||'',persona:r[3],done:r[4]==='si'}));
+  }catch(e){}
+}
+
+async function aggiungiAllaListaDaDispensa(nome){
+  const id=String(Date.now());
+  try{
+    const res=await api({action:'add',foglio:'Acquisti',id,testo:nome,qty:'',persona:currentUser});
+    if(!res.errore){
+      listaSpesa.push({id,text:nome,qty:'',persona:currentUser,done:false});
+      toast('✓ Aggiunto alla lista della spesa');
+    }
+  }catch(e){toast('❌ Errore aggiunta a lista spesa');}
+}
+
+function apriAggiungiManualeDispensa(){
+  apriEdit(`
+    <h3><i class="ti ti-plus"></i> Aggiungi prodotto</h3>
+    <label>Nome prodotto</label>
+    <input type="text" id="disp-nome" placeholder="es. Pasta Barilla">
+    <label>Categoria</label>
+    <select id="disp-cat">
+      <option value="Alimentare">🍽️ Alimentare</option>
+      <option value="Cosmetico">🧴 Cosmetico</option>
+      <option value="Altro">📦 Altro</option>
+    </select>
+    <label>Scadenza (opzionale)</label>
+    <input type="date" id="disp-scadenza">
+    <div class="edit-btns">
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+      <button type="button" class="edit-save" onclick="salvaAggiungiManualeDispensa()">Aggiungi</button>
+    </div>
+  `);
+}
+
+async function salvaAggiungiManualeDispensa(){
+  const nome=document.getElementById('disp-nome').value.trim();
+  const cat=document.getElementById('disp-cat').value;
+  const scadenza=document.getElementById('disp-scadenza').value;
+  if(!nome){toast('⚠️ Inserisci il nome del prodotto');return;}
+  chiudiEdit();
+  const id=String(Date.now());
+  try{
+    const res=await api({action:'add',foglio:'Dispensa',id,codice:'',nome,cat,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
+    if(res.errore) throw new Error();
+    dispensaItems.push({id,codice:'',nome,cat,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
+    renderDispensa();aggiornaBadgeDispensa();
+    toast('✓ Prodotto aggiunto alla dispensa');
+  }catch(e){toast('❌ Errore salvataggio');}
+}
+
+function apriImpostazioniDispensa(){
+  const attuale=soglieGiorni();
+  apriEdit(`
+    <h3><i class="ti ti-settings"></i> Impostazioni avvisi</h3>
+    <label>Pre-avviso di scadenza prodotto</label>
+    <select id="set-soglia">
+      <option value="1" ${attuale===1?'selected':''}>1 giorno prima</option>
+      <option value="2" ${attuale===2?'selected':''}>2 giorni prima</option>
+      <option value="3" ${attuale===3?'selected':''}>3 giorni prima</option>
+      <option value="7" ${attuale===7?'selected':''}>7 giorni prima</option>
+      <option value="15" ${attuale===15?'selected':''}>15 giorni prima</option>
+      <option value="30" ${attuale===30?'selected':''}>1 mese prima</option>
+      <option value="60" ${attuale===60?'selected':''}>2 mesi prima</option>
+      <option value="90" ${attuale===90?'selected':''}>3 mesi prima</option>
+    </select>
+    <div class="edit-btns">
+      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+      <button type="button" class="edit-save" onclick="salvaImpostazioniDispensa()">Salva</button>
+    </div>
+  `);
+}
+
+function salvaImpostazioniDispensa(){
+  const val=document.getElementById('set-soglia').value;
+  localStorage.setItem('sogliaAvviso',val);
+  chiudiEdit();
+  renderDispensa();aggiornaBadgeDispensa();
+  toast('✓ Impostazioni salvate');
+}
+
+// ---- SCANNER CODICE A BARRE ----
+function apriScanner(){
+  apriEdit(`
+    <h3><i class="ti ti-barcode"></i> Scansiona codice a barre</h3>
+    <div class="scan-box">
+      <video id="scan-video" autoplay playsinline muted></video>
+      <div class="scan-overlay"><div class="scan-frame"></div></div>
+    </div>
+    <p style="font-size:12px;color:#888780;text-align:center">Inquadra il codice a barre del prodotto</p>
+    <div class="edit-btns">
+      <button type="button" class="edit-cancel" onclick="chiudiScannerEEdit()">Annulla</button>
+    </div>
+  `);
+  avviaScanner();
+}
+
+function chiudiScannerEEdit(){
+  fermaScanner();
+  chiudiEdit();
+}
+
+async function avviaScanner(){
+  try{
+    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const video=document.getElementById('scan-video');
+    video.srcObject=scannerStream;
+    if('BarcodeDetector' in window){
+      const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});
+      const loop=async()=>{
+        try{
+          const barcodes=await detector.detect(video);
+          if(barcodes.length>0){
+            const codice=barcodes[0].rawValue;
+            fermaScanner();
+            chiudiEdit();
+            await gestisciCodiceScansionato(codice);
+            return;
+          }
+        }catch(e){}
+        scannerLoopId=requestAnimationFrame(loop);
+      };
+      scannerLoopId=requestAnimationFrame(loop);
+    }else{
+      toast('⚠️ Il tuo browser non supporta la scansione automatica. Inserisci il codice manualmente.');
+    }
+  }catch(e){toast('❌ Impossibile accedere alla fotocamera');}
+}
+
+function fermaScanner(){
+  if(scannerLoopId) cancelAnimationFrame(scannerLoopId);
+  scannerLoopId=null;
+  if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;}
+}
+
+async function gestisciCodiceScansionato(codice){
+  // 1. cerca nel foglio Dispensa (anche tra quelli già usati/eliminati non serve, cerchiamo per nome noto)
+  const trovato=dispensaItems.find(i=>i.codice===codice);
+  if(trovato){
+    apriEdit(`
+      <h3><i class="ti ti-package"></i> Prodotto trovato</h3>
+      <p style="font-size:13px;color:#888780;margin-bottom:10px">${esc(trovato.nome)}</p>
+      <label>Scadenza (opzionale)</label>
+      <input type="date" id="scan-scadenza">
+      <div class="edit-btns">
+        <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+        <button type="button" class="edit-save" onclick="salvaProdottoScansionato('${esc(trovato.nome)}','${codice}','${trovato.cat}')">Aggiungi alla dispensa</button>
+      </div>
+    `);
+    return;
+  }
+  // 2. cerca su Open Food Facts
+  toast('🔍 Ricerca prodotto...');
+  try{
+    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json`);
+    const data=await r.json();
+    if(data.status===1&&data.product){
+      const nome=data.product.product_name||data.product.product_name_it||'Prodotto senza nome';
+      apriEdit(`
+        <h3><i class="ti ti-package"></i> Prodotto trovato online</h3>
+        <p style="font-size:13px;color:#888780;margin-bottom:10px">${esc(nome)}</p>
+        <label>Categoria</label>
+        <select id="scan-cat">
+          <option value="Alimentare">🍽️ Alimentare</option>
+          <option value="Cosmetico">🧴 Cosmetico</option>
+          <option value="Altro">📦 Altro</option>
+        </select>
+        <label>Scadenza (opzionale)</label>
+        <input type="date" id="scan-scadenza">
+        <div class="edit-btns">
+          <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+          <button type="button" class="edit-save" onclick="salvaProdottoScansionatoConCat('${esc(nome)}','${codice}')">Aggiungi alla dispensa</button>
+        </div>
+      `);
+    }else{
+      apriEdit(`
+        <h3><i class="ti ti-package"></i> Prodotto non trovato</h3>
+        <p style="font-size:13px;color:#888780;margin-bottom:10px">Codice: ${codice}. Inserisci il nome manualmente.</p>
+        <label>Nome prodotto</label>
+        <input type="text" id="scan-nome" placeholder="es. Pasta Barilla">
+        <label>Categoria</label>
+        <select id="scan-cat">
+          <option value="Alimentare">🍽️ Alimentare</option>
+          <option value="Cosmetico">🧴 Cosmetico</option>
+          <option value="Altro">📦 Altro</option>
+        </select>
+        <label>Scadenza (opzionale)</label>
+        <input type="date" id="scan-scadenza">
+        <div class="edit-btns">
+          <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
+          <button type="button" class="edit-save" onclick="salvaProdottoManualeConCodice('${codice}')">Aggiungi alla dispensa</button>
+        </div>
+      `);
+    }
+  }catch(e){toast('❌ Errore ricerca online — inserisci manualmente');}
+}
+
+async function salvaProdottoScansionato(nome,codice,cat){
+  const scadenza=document.getElementById('scan-scadenza').value;
+  await _salvaNuovoProdottoDispensa(nome,codice,cat,scadenza);
+}
+async function salvaProdottoScansionatoConCat(nome,codice){
+  const cat=document.getElementById('scan-cat').value;
+  const scadenza=document.getElementById('scan-scadenza').value;
+  await _salvaNuovoProdottoDispensa(nome,codice,cat,scadenza);
+}
+async function salvaProdottoManualeConCodice(codice){
+  const nome=document.getElementById('scan-nome').value.trim();
+  const cat=document.getElementById('scan-cat').value;
+  const scadenza=document.getElementById('scan-scadenza').value;
+  if(!nome){toast('⚠️ Inserisci il nome del prodotto');return;}
+  await _salvaNuovoProdottoDispensa(nome,codice,cat,scadenza);
+}
+async function _salvaNuovoProdottoDispensa(nome,codice,cat,scadenza){
+  chiudiEdit();
+  const id=String(Date.now());
+  try{
+    const res=await api({action:'add',foglio:'Dispensa',id,codice,nome,cat,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
+    if(res.errore) throw new Error();
+    dispensaItems.push({id,codice,nome,cat,stato:'chiuso',scadenza,tiposcad:'',dataapertura:'',persona:currentUser});
+    renderDispensa();aggiornaBadgeDispensa();
+    toast('✓ Prodotto aggiunto alla dispensa');
+  }catch(e){toast('❌ Errore salvataggio');}
 }
 
 // ---- INIT ----
