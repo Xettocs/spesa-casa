@@ -11,6 +11,7 @@
 <link rel="manifest" href="data:application/json,{%22name%22:%22Casa%20Spese%22,%22short_name%22:%22Casa%20Spese%22,%22display%22:%22standalone%22,%22background_color%22:%22%23534AB7%22,%22icons%22:[{%22src%22:%22icon.svg%22,%22sizes%22:%22180x180%22,%22type%22:%22image/svg+xml%22}]}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a18;min-height:100vh}
@@ -443,7 +444,6 @@ let riepilogoPeriod='mensile',riepilogoCursor=new Date();
 let salvando=false;
 let dispensaView='dispensa';
 let sogliaAvviso=7; // giorni, default
-let scannerStream=null, scannerLoopId=null;
 
 // ---- CONFIRM ----
 let _confirmResolve=null;
@@ -1446,7 +1446,9 @@ function salvaImpostazioniDispensa(){
   toast('✓ Impostazioni salvate');
 }
 
-// ---- SCANNER CODICE A BARRE ----
+// ---- SCANNER CODICE A BARRE (ZXing) ----
+let zxingReader=null;
+
 function apriScanner(){
   apriEdit(`
     <h3><i class="ti ti-barcode"></i> Scansiona codice a barre</h3>
@@ -1454,7 +1456,7 @@ function apriScanner(){
       <video id="scan-video" autoplay playsinline muted></video>
       <div class="scan-overlay"><div class="scan-frame"></div></div>
     </div>
-    <p style="font-size:12px;color:#888780;text-align:center">Inquadra il codice a barre del prodotto</p>
+    <p style="font-size:12px;color:#888780;text-align:center" id="scan-status">Inquadra il codice a barre del prodotto</p>
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiScannerEEdit()">Annulla</button>
     </div>
@@ -1469,35 +1471,53 @@ function chiudiScannerEEdit(){
 
 async function avviaScanner(){
   try{
-    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    const video=document.getElementById('scan-video');
-    video.srcObject=scannerStream;
-    if('BarcodeDetector' in window){
-      const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});
-      const loop=async()=>{
-        try{
-          const barcodes=await detector.detect(video);
-          if(barcodes.length>0){
-            const codice=barcodes[0].rawValue;
-            fermaScanner();
-            chiudiEdit();
-            await gestisciCodiceScansionato(codice);
-            return;
-          }
-        }catch(e){}
-        scannerLoopId=requestAnimationFrame(loop);
-      };
-      scannerLoopId=requestAnimationFrame(loop);
-    }else{
-      toast('⚠️ Il tuo browser non supporta la scansione automatica. Inserisci il codice manualmente.');
+    const formats=[
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,
+      ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128
+    ];
+    const hints=new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);
+    zxingReader=new ZXing.BrowserMultiFormatReader(hints);
+
+    const devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
+    if(!devices.length){
+      toast('❌ Nessuna fotocamera trovata');
+      return;
     }
-  }catch(e){toast('❌ Impossibile accedere alla fotocamera');}
+    // preferisci la fotocamera posteriore se disponibile
+    const back=devices.find(d=>/back|rear|environment/i.test(d.label));
+    const deviceId=(back||devices[devices.length-1]).deviceId;
+
+    const videoEl=document.getElementById('scan-video');
+    zxingReader.decodeFromVideoDevice(deviceId,videoEl,async(result,err,controls)=>{
+      if(result){
+        const codice=result.getText();
+        controls.stop();
+        fermaScanner();
+        chiudiEdit();
+        await gestisciCodiceScansionato(codice);
+      }
+      // se err esiste ma nessun risultato, continua a scansionare (comportamento normale frame-by-frame)
+    });
+  }catch(e){
+    toast('❌ Impossibile accedere alla fotocamera');
+  }
 }
 
 function fermaScanner(){
-  if(scannerLoopId) cancelAnimationFrame(scannerLoopId);
-  scannerLoopId=null;
-  if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;}
+  if(zxingReader){
+    try{zxingReader.stopContinuousDecode();}catch(e){}
+    try{zxingReader.reset();}catch(e){}
+    zxingReader=null;
+  }
+  const video=document.getElementById('scan-video');
+  if(video&&video.srcObject){
+    video.srcObject.getTracks().forEach(t=>t.stop());
+    video.srcObject=null;
+  }
 }
 
 async function gestisciCodiceScansionato(codice){
