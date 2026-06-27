@@ -1594,8 +1594,11 @@ async function avviaScanner(){
           await gestisciCodiceScansionato(codice);
           return;
         }
-        if(err && err.name && err.name!=='NotFoundException' && err.name!=='ChecksumException' && err.name!=='FormatException'){
-          if(statusEl) statusEl.textContent='Errore scanner: '+err.name;
+        if(err){
+          const nomeErr=String(err.name||err.message||err);
+          const eNormale=/NotFound|Checksum|Format/i.test(nomeErr);
+          if(!eNormale && statusEl) statusEl.textContent='Errore scanner: '+nomeErr;
+          else if(statusEl) statusEl.textContent='Scansione in corso... ('+nomeErr+')';
         }
       });
     }catch(decErr){
