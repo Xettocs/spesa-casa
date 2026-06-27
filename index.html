@@ -1201,6 +1201,20 @@ function statoScadenza(dataScad){
   return 'normale';
 }
 
+function etichettaScadenza(dataScad){
+  if(!dataScad) return '';
+  const oggi=new Date();oggi.setHours(0,0,0,0);
+  const d=new Date(dataScad);
+  if(isNaN(d.getTime())) return '';
+  const diffGiorni=Math.floor((d-oggi)/(1000*60*60*24));
+  if(diffGiorni<0){
+    const giorniPassati=Math.abs(diffGiorni);
+    return ` · <strong>Scaduto da ${giorniPassati} ${giorniPassati===1?'giorno':'giorni'}</strong>`;
+  }
+  if(diffGiorni<=soglieGiorni()) return ' · <strong>In scadenza</strong>';
+  return '';
+}
+
 function aggiornaBadgeDispensa(){
   let count=0;
   dispensaItems.filter(i=>i.stato==='chiuso'||i.stato==='uso').forEach(i=>{
@@ -1230,7 +1244,7 @@ function renderDispensa(){
         <div class="pantry-top">
           <div>
             <div class="pantry-name ${textCls}">${esc(i.nome)}</div>
-            <div class="pantry-sub">${scad?'Scade: '+formatDataIt(scad):'Nessuna scadenza'}${i.dataapertura?' · Aperto il '+formatDataIt(i.dataapertura):''}</div>
+            <div class="pantry-sub">${scad?'Scade: '+formatDataIt(scad):'Nessuna scadenza'}${etichettaScadenza(scad)}${i.dataapertura?' · Aperto il '+formatDataIt(i.dataapertura):''}</div>
           </div>
         </div>
         <div class="pantry-actions" style="margin-top:8px">
@@ -1261,7 +1275,7 @@ function renderDispensa(){
       <div class="pantry-top">
         <div style="flex:1">
           <div class="pantry-name ${textCls}">${esc(nome)}</div>
-          <div class="pantry-sub">${scad?'Scadenza più vicina: '+formatDataIt(scad):'Nessuna scadenza'} · Quantità: ${lotti.length}</div>
+          <div class="pantry-sub">${scad?'Scadenza più vicina: '+formatDataIt(scad):'Nessuna scadenza'}${etichettaScadenza(scad)} · Quantità: ${lotti.length}</div>
         </div>
         <div class="pantry-actions">
           <button class="pantry-btn" onclick="apriEditDispensaItem('${principale.id}')"><i class="ti ti-pencil"></i></button>
@@ -1275,7 +1289,7 @@ function renderDispensa(){
           const stL=statoScadenza(l.scadenza);
           const tClsL=stL==='expired'?'expired-text':(stL==='warn'?'warn-text':'');
           return `<div class="pantry-lot">
-            <div class="pantry-lot-info ${tClsL}">${l.scadenza?'Scad. '+formatDataIt(l.scadenza):'Nessuna scadenza'}</div>
+            <div class="pantry-lot-info ${tClsL}">${l.scadenza?'Scad. '+formatDataIt(l.scadenza):'Nessuna scadenza'}${etichettaScadenza(l.scadenza)}</div>
             <button class="pantry-btn" onclick="apriEditDispensaItem('${l.id}')"><i class="ti ti-pencil"></i></button>
             <button class="pantry-btn" onclick="apriLotto('${l.id}')"><i class="ti ti-package"></i></button>
             <button class="pantry-btn danger" onclick="eliminaLotto('${l.id}')"><i class="ti ti-trash"></i></button>
