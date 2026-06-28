@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v236</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v237</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1206,7 +1206,7 @@ async function ricaricaDispensa(){
     dispensaItems=(data.dati||[]).slice(1).filter(r=>r[0]).map(r=>({
       id:String(r[0]),codice:r[1]||'',cat:r[2]||'',stato:r[3]||'chiuso',
       scadenza:r[4]||'',tiposcad:r[5]||'',dataapertura:r[6]||'',persona:r[7]||'',
-      tipo:r[8]||'',marca:r[9]||''
+      tipo:r[8]||'',marca:r[9]||'',dataMovimento:r[10]||''
     }));
   }catch(e){toast('❌ Errore caricamento dispensa');}
   renderDispensa();
@@ -1299,6 +1299,7 @@ function renderDispensa(){
         <div class="pantry-actions" style="margin-top:8px">
           <button class="pantry-btn" onclick="apriEditDispensaItem('${i.id}')"><i class="ti ti-pencil"></i></button>
           <button class="pantry-btn" onclick="segnaTerminato('${i.id}')"><i class="ti ti-check"></i> Terminato</button>
+          <button class="pantry-btn danger" onclick="eliminaInUso('${i.id}')"><i class="ti ti-trash"></i></button>
         </div>
       </div>`;
     }).join('');
@@ -1421,8 +1422,25 @@ async function eliminaLotto(id){
   dispensaItems=dispensaItems.filter(i=>i.id!==id);
   chiudiEdit();
   renderDispensa();aggiornaBadgeDispensa();
+  const oggi=new Date().toISOString().split('T')[0];
   try{
-    await api({action:'delete',foglio:'Dispensa',id,motivo:'eliminato',persona:currentUser});
+    await api({action:'delete',foglio:'Dispensa',id,motivo:'eliminato',datamovimento:oggi,persona:currentUser});
+    toast('Prodotto eliminato');
+  }catch(e){toast('❌ Errore eliminazione');}
+}
+
+async function eliminaInUso(id){
+  const item=dispensaItems.find(i=>i.id===id);
+  if(!item) return;
+  const nomeAttuale=nomeProdotto(item);
+  const ok=await conferma(`Eliminare "${nomeAttuale}"? Verrà registrato come prodotto non terminato (spreco).`,'Elimina',false);
+  if(!ok) return;
+  dispensaItems=dispensaItems.filter(i=>i.id!==id);
+  chiudiEdit();
+  renderDispensa();aggiornaBadgeDispensa();
+  const oggi=new Date().toISOString().split('T')[0];
+  try{
+    await api({action:'delete',foglio:'Dispensa',id,motivo:'eliminato',datamovimento:oggi,persona:currentUser});
     toast('Prodotto eliminato');
   }catch(e){toast('❌ Errore eliminazione');}
 }
@@ -1436,8 +1454,9 @@ async function segnaTerminato(id){
   dispensaItems=dispensaItems.filter(i=>i.id!==id);
   chiudiEdit();
   renderDispensa();aggiornaBadgeDispensa();
+  const oggi=new Date().toISOString().split('T')[0];
   try{
-    await api({action:'delete',foglio:'Dispensa',id,motivo:'terminato',persona:currentUser});
+    await api({action:'delete',foglio:'Dispensa',id,motivo:'terminato',datamovimento:oggi,persona:currentUser});
     // calcola le quantità residue dello stesso prodotto, dopo la rimozione di quello appena terminato
     const residuiChiusi=dispensaItems.filter(x=>nomeProdotto(x)===nomeAttuale&&x.stato==='chiuso').length;
     const residuiUso=dispensaItems.filter(x=>nomeProdotto(x)===nomeAttuale&&x.stato==='uso').length;
