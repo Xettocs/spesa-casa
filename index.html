@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v227</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v228</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1515,26 +1515,21 @@ function eseguiRicercaProdotto(){
     return;
   }
 
-  function renderRisultatiSezione(lista,sezione){
+  function renderSezioneUso(lista){
     if(!lista.length) return '';
-    const titoloSezione=sezione==='dispensa'?'📦 In Dispensa':'🔓 In Uso';
-    return '<p style="font-size:12px;color:#888780;margin:10px 0 6px">'+titoloSezione+' — '+lista.length+' trovato/i</p>'+
+    return '<p style="font-size:12px;color:#888780;margin:10px 0 6px">🔓 In Uso — '+lista.length+' trovato/i</p>'+
       lista.map(function(i){
         const scadEffettiva=scadenzaEffettiva(i);
         const stScad=statoScadenza(scadEffettiva);
         const cardCls=stScad==='expired'?'expired':(stScad==='warn'?'warn':'');
         const textCls=stScad==='expired'?'expired-text':(stScad==='warn'?'warn-text':'');
-        const azioniHtml=sezione==='dispensa'
-          ? '<button class="pantry-btn" onclick="apriEditDispensaItem(\''+i.id+'\')"><i class="ti ti-pencil"></i></button>'+
-            '<button class="pantry-btn" onclick="apriLotto(\''+i.id+'\')"><i class="ti ti-package"></i> Apri</button>'+
-            '<button class="pantry-btn danger" onclick="eliminaLotto(\''+i.id+'\')"><i class="ti ti-trash"></i></button>'
-          : '<button class="pantry-btn" onclick="apriEditDispensaItem(\''+i.id+'\')"><i class="ti ti-pencil"></i></button>'+
-            '<button class="pantry-btn" onclick="segnaTerminato(\''+i.id+'\')"><i class="ti ti-check"></i> Terminato</button>';
+        const azioniHtml='<button class="pantry-btn" onclick="apriEditDispensaItem(\''+i.id+'\')"><i class="ti ti-pencil"></i></button>'+
+          '<button class="pantry-btn" onclick="segnaTerminato(\''+i.id+'\')"><i class="ti ti-check"></i> Terminato</button>';
         return '<div class="pantry-card '+cardCls+'" style="margin-bottom:6px">'+
           '<div class="pantry-top">'+
             '<div style="flex:1">'+
               '<div class="pantry-name '+textCls+'">'+esc(i.nome)+'</div>'+
-              '<div class="pantry-sub">'+(scadEffettiva?'Scad. '+formatDataIt(scadEffettiva):'Nessuna scadenza')+etichettaScadenza(scadEffettiva)+(sezione==='dispensa'?etichettaScadenzaFissa(i.tiposcad):'')+(i.dataapertura?' · Aperto il '+formatDataIt(i.dataapertura):'')+'</div>'+
+              '<div class="pantry-sub">'+(scadEffettiva?'Scad. '+formatDataIt(scadEffettiva):'Nessuna scadenza')+etichettaScadenza(scadEffettiva)+(i.dataapertura?' · Aperto il '+formatDataIt(i.dataapertura):'')+'</div>'+
             '</div>'+
           '</div>'+
           '<div class="pantry-actions" style="margin-top:8px">'+azioniHtml+'</div>'+
@@ -1542,10 +1537,88 @@ function eseguiRicercaProdotto(){
       }).join('');
   }
 
+  function renderSezioneDispensa(lista,codiceRic){
+    if(!lista.length){
+      // nessuna unità chiusa: mostra comunque la card con contatore a 0, per permettere l'aggiunta rapida
+      return '<p style="font-size:12px;color:#888780;margin:10px 0 6px">📦 In Dispensa — 0 trovato/i</p>'+
+        '<div class="pantry-card">'+
+          '<div class="pantry-top">'+
+            '<div style="flex:1"><div class="pantry-name">Nessuna unità chiusa in dispensa</div></div>'+
+            renderContatoreAggiunta(codiceRic,null)+
+          '</div>'+
+        '</div>';
+    }
+    const lottiOrdinati=[...lista].sort((a,b)=>(a.scadenza||'9999').localeCompare(b.scadenza||'9999'));
+    const principale=lottiOrdinati[0];
+    const scad=principale.scadenza;
+    const st=statoScadenza(scad);
+    const cardCls=st==='expired'?'expired':(st==='warn'?'warn':'');
+    const textCls=st==='expired'?'expired-text':(st==='warn'?'warn-text':'');
+    return '<p style="font-size:12px;color:#888780;margin:10px 0 6px">📦 In Dispensa — '+lista.length+' trovato/i</p>'+
+      '<div class="pantry-card '+cardCls+'">'+
+        '<div class="pantry-top">'+
+          '<div style="flex:1">'+
+            '<div class="pantry-name '+textCls+'">'+esc(principale.nome)+'</div>'+
+            '<div class="pantry-sub">'+(scad?'Scadenza più vicina: '+formatDataIt(scad):'Nessuna scadenza')+etichettaScadenza(scad)+etichettaScadenzaFissa(principale.tiposcad)+' · Quantità: '+lista.length+'</div>'+
+          '</div>'+
+          renderContatoreAggiunta(codiceRic,principale)+
+        '</div>'+
+      '</div>';
+  }
+
   risultatoEl.innerHTML=
     '<p style="font-size:12px;color:#888780;margin-bottom:4px">Trovato: '+trovatiDispensa.length+' in Dispensa, '+trovatiUso.length+' in Uso</p>'+
-    renderRisultatiSezione(trovatiDispensa,'dispensa')+
-    renderRisultatiSezione(trovatiUso,'uso');
+    renderSezioneDispensa(trovatiDispensa,codiceNormalizzato)+
+    renderSezioneUso(trovatiUso);
+
+  collegaContatoriAggiunta(codiceNormalizzato);
+}
+
+function renderContatoreAggiunta(codiceRic,prodottoRiferimento){
+  return '<div class="pantry-actions" style="flex-direction:column;align-items:flex-end;gap:4px">'+
+    '<div style="display:flex;align-items:center;gap:6px">'+
+      '<button class="pantry-btn" data-azione="meno" style="padding:4px 9px;font-size:14px">−</button>'+
+      '<span id="contatore-agg-val" style="font-size:14px;font-weight:600;min-width:18px;text-align:center">0</span>'+
+      '<button class="pantry-btn" data-azione="piu" style="padding:4px 9px;font-size:14px">+</button>'+
+    '</div>'+
+    '<button class="pantry-btn" id="btn-conferma-aggiunta" style="display:none;font-size:11px">Aggiungi</button>'+
+  '</div>';
+}
+
+let contatoreAggiuntaValore=0;
+function collegaContatoriAggiunta(codiceRic){
+  contatoreAggiuntaValore=0;
+  const valEl=document.getElementById('contatore-agg-val');
+  const btnConferma=document.getElementById('btn-conferma-aggiunta');
+  const btnMeno=document.querySelector('[data-azione="meno"]');
+  const btnPiu=document.querySelector('[data-azione="piu"]');
+  function aggiornaVista(){
+    if(valEl) valEl.textContent=contatoreAggiuntaValore;
+    if(btnConferma) btnConferma.style.display=contatoreAggiuntaValore>0?'block':'none';
+  }
+  if(btnMeno) btnMeno.addEventListener('click',function(){
+    if(contatoreAggiuntaValore>0){contatoreAggiuntaValore--;aggiornaVista();}
+  });
+  if(btnPiu) btnPiu.addEventListener('click',function(){
+    contatoreAggiuntaValore++;aggiornaVista();
+  });
+  if(btnConferma) btnConferma.addEventListener('click',async function(){
+    const quantita=contatoreAggiuntaValore;
+    if(quantita<1) return;
+    // trova un riferimento esistente per riusare Categoria/Prodotto/Marca (da Dispensa, storico, o lascia vuoto)
+    let base={categoria:'Alimenti',tipo:'',marca:''};
+    const esistente=dispensaItems.find(i=>i.codice===codiceRic);
+    if(esistente){
+      base={categoria:esistente.cat,tipo:esistente.tipo,marca:esistente.marca,tiposcad:esistente.tiposcad};
+    }else{
+      try{
+        const rStorico=await api({action:'cercaCodice',codice:codiceRic});
+        if(rStorico.trovato) base={categoria:rStorico.cat,tipo:rStorico.tipo,marca:rStorico.marca,tiposcad:rStorico.tiposcad};
+      }catch(e){/* usa i valori di default */}
+    }
+    chiudiEdit();
+    mostraFormProdotto(Object.assign({},base,{quantita}),1,quantita,codiceRic);
+  });
 }
 
 async function aggiungiAllaListaDaCodiceRicerca(codice){
