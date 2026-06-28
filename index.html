@@ -145,7 +145,7 @@ select:focus,input:focus{border-color:#534AB7}
   <div class="login-card">
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
-    <div class="login-sub">Antonio &amp; Concetta <span style="opacity:.5;font-size:11px">· v196</span></div>
+    <div class="login-sub">Antonio &amp; Concetta <span style="opacity:.5;font-size:11px">· v198</span></div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1356,7 +1356,7 @@ async function confermaApriLotto(id,eraUltimo){
   const dataApertura=document.getElementById('apri-data').value||new Date().toISOString().split('T')[0];
   chiudiEdit();
   try{
-    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'uso',scadenza:item.scadenza,tiposcad,dataapertura:dataApertura,persona:currentUser,tipo:item.tipo,modello:item.modello,marca:item.marca});
+    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'uso',scadenza:item.scadenza,tiposcad,dataapertura:dataApertura,persona:currentUser,tipo:item.tipo,marca:item.marca});
     if(res.errore) throw new Error();
     item.stato='uso';item.tiposcad=tiposcad;item.dataapertura=dataApertura;
     renderDispensa();aggiornaBadgeDispensa();
@@ -1526,11 +1526,10 @@ async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
   const codice=document.getElementById('disp-codice').value.trim();
   const categoria=document.getElementById('disp-categoria').value;
   const tipo=document.getElementById('disp-tipo').value.trim();
-  const modello=document.getElementById('disp-modello').value.trim();
   const marca=document.getElementById('disp-marca').value.trim();
   const scadenza=document.getElementById('disp-scadenza').value;
   const tiposcad=document.getElementById('disp-tiposcad').value;
-  if(!tipo){toast('⚠️ Inserisci almeno il Tipo del prodotto');return;}
+  if(!tipo){toast('⚠️ Inserisci almeno il Prodotto');return;}
 
   let quantita=paccoTotale;
   if(paccoAttuale===1){
@@ -1539,18 +1538,24 @@ async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
   }
 
   // Costruisce il nome visualizzato combinando i campi compilati
-  const nome=[marca,tipo,modello].filter(Boolean).join(' ')||tipo;
+  const nome=[marca,tipo].filter(Boolean).join(' ')||tipo;
 
   const id=String(Date.now())+'_'+paccoAttuale;
   try{
-    const res=await api({action:'add',foglio:'Dispensa',id,codice,nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
-    if(res.errore) throw new Error();
-    dispensaItems.push({id,codice,nome,cat:categoria,tipo,modello,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
-  }catch(e){toast('❌ Errore salvataggio');return;}
+    const res=await api({action:'add',foglio:'Dispensa',id,codice,nome,cat:categoria,tipo,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
+    if(res.errore) throw new Error(res.errore);
+    dispensaItems.push({id,codice,nome,cat:categoria,tipo,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
+    if(codice&&paccoAttuale===1){
+      api({action:'salvaAnagrafica',codice,cat:categoria,tipo,marca}).catch(()=>{});
+    }
+  }catch(e){
+    toast('❌ Errore salvataggio: '+(e.message||'sconosciuto'));
+    return;
+  }
 
   if(paccoAttuale<quantita){
     // passa alla confezione successiva, riusando gli stessi dati anagrafici (incluso tiposcad e codice) ma scadenza vuota
-    mostraFormProdotto({categoria,tipo,modello,marca,quantita,tiposcad},paccoAttuale+1,quantita,codice);
+    mostraFormProdotto({categoria,tipo,marca,quantita,tiposcad},paccoAttuale+1,quantita,codice);
   } else {
     chiudiEdit();
     renderDispensa();aggiornaBadgeDispensa();
