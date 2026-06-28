@@ -176,7 +176,7 @@ select:focus,input:focus{border-color:#534AB7}
 
 <div class="header">
   <h1>👩🏻‍❤️‍👨🏻 Casa Spese</h1>
-  <p>Antonio &amp; Concetta <span style="opacity:.4">· build 2026-06-28-5</span></p>
+  <p>Antonio &amp; Concetta <span style="opacity:.4">· build 2026-06-28-6</span></p>
 </div>
 
 <div class="tabs">
@@ -1459,6 +1459,7 @@ function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
       <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
       <button type="button" class="edit-save" onclick="salvaPaccoProdotto(${paccoAttuale},${paccoTotale},'${codiceEsistente||''}')">${paccoAttuale<paccoTotale?'Salva e continua →':'Salva'}</button>
     </div>
+    <div id="debug-log" style="margin-top:14px;padding:10px;background:#1a1a18;color:#0f0;font-size:10px;font-family:monospace;border-radius:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all">In attesa del click su Salva...</div>
   `);
 }
 
