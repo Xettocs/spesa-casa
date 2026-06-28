@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v222</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v225</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -561,6 +561,22 @@ function parseSpese(rows){
   }));
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function checksumValido(codice){
+  // Verifica il checksum EAN-13/EAN-8/UPC-A: l'ultima cifra deve corrispondere al calcolo standard.
+  // Se il codice non ha una lunghezza tipica con checksum (es. CODE_128 a lunghezza libera), lo accetta comunque.
+  const lunghezzeConChecksum=[8,12,13,14];
+  if(!lunghezzeConChecksum.includes(codice.length)) return true;
+  const cifre=codice.split('').map(Number);
+  const checkDigit=cifre.pop();
+  let somma=0;
+  // GTIN: da destra, pesi alternati 3,1,3,1... partendo dal penultimo
+  for(let i=cifre.length-1,peso=3;i>=0;i--,peso=peso===3?1:3){
+    somma+=cifre[i]*peso;
+  }
+  const checkCalcolato=(10-(somma%10))%10;
+  return checkCalcolato===checkDigit;
+}
 function api(params){
   const p=new URLSearchParams({...params,pwd:PWD});
   return fetch(WEBAPP_URL+'?'+p.toString()).then(r=>r.json());
@@ -1876,6 +1892,12 @@ async function avviaScannerGenerico(onCodiceConfermato){
           // scarta letture che non sembrano un codice a barre valido (EAN-13, EAN-8, UPC-A, UPC-E sono tutti numerici)
           if(!/^\d{6,14}$/.test(codiceLetto)){
             if(statusEl) statusEl.textContent='Lettura scartata (formato non valido), continuo...';
+            ultimoCodiceLetto=null;conteggioLetture=0;
+            return;
+          }
+          // scarta letture che non superano il controllo del checksum (probabile errore di lettura)
+          if(!checksumValido(codiceLetto)){
+            if(statusEl) statusEl.textContent='Lettura scartata (checksum non valido), continuo...';
             ultimoCodiceLetto=null;conteggioLetture=0;
             return;
           }
