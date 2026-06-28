@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v225</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v226</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1463,10 +1463,9 @@ function apriAggiungiManualeDispensa(){
 }
 
 function apriCercaProdotto(){
-  const vistaLabel=dispensaView==='dispensa'?'In Dispensa':'In Uso';
   const html=
     '<h3><i class="ti ti-search"></i> Cerca per codice a barre</h3>'+
-    '<p style="font-size:12px;color:#888780;margin-bottom:4px">Ricerca nella sezione attiva: <strong>'+vistaLabel+'</strong></p>'+
+    '<p style="font-size:12px;color:#888780;margin-bottom:4px">Ricerca sia in <strong>In Dispensa</strong> che in <strong>In Uso</strong></p>'+
     '<label>Codice a barre</label>'+
     '<input type="text" id="cerca-codice" placeholder="es. 8001090341688" inputmode="numeric">'+
     '<button type="button" class="btn btn-outline" id="btn-scan-in-cerca" style="margin-top:8px"><i class="ti ti-barcode"></i> Scansiona invece di digitare</button>'+
@@ -1493,11 +1492,11 @@ function eseguiRicercaProdotto(){
   if(!codice){risultatoEl.innerHTML='<p style="font-size:13px;color:#993C1D">Inserisci un codice</p>';return;}
 
   const codiceNormalizzato=String(codice).trim().replace(/\s/g,'');
-  const statoCercato=dispensaView==='dispensa'?'chiuso':'uso';
-  const trovati=dispensaItems.filter(i=>String(i.codice||'').trim().replace(/\s/g,'')===codiceNormalizzato&&i.stato===statoCercato);
+  const trovatiDispensa=dispensaItems.filter(i=>String(i.codice||'').trim().replace(/\s/g,'')===codiceNormalizzato&&i.stato==='chiuso');
+  const trovatiUso=dispensaItems.filter(i=>String(i.codice||'').trim().replace(/\s/g,'')===codiceNormalizzato&&i.stato==='uso');
 
-  if(!trovati.length){
-    risultatoEl.innerHTML='<p style="font-size:13px;color:#993C1D;margin-bottom:10px">Nessun prodotto trovato in '+(dispensaView==='dispensa'?'In Dispensa':'In Uso')+' con questo codice</p>'+
+  if(!trovatiDispensa.length&&!trovatiUso.length){
+    risultatoEl.innerHTML='<p style="font-size:13px;color:#993C1D;margin-bottom:10px">Nessun prodotto trovato né In Dispensa né In Uso con questo codice</p>'+
       '<button type="button" class="btn" id="btn-aggiungi-prodotto-da-ricerca"><i class="ti ti-plus"></i> Aggiungi prodotto</button>'+
       '<button type="button" class="btn btn-outline" id="btn-aggiungi-da-ricerca" style="margin-top:8px"><i class="ti ti-shopping-cart"></i> Aggiungi alla lista della spesa</button>';
     const btnAggProdotto=document.getElementById('btn-aggiungi-prodotto-da-ricerca');
@@ -1512,28 +1511,37 @@ function eseguiRicercaProdotto(){
     return;
   }
 
-  risultatoEl.innerHTML='<p style="font-size:12px;color:#888780;margin-bottom:8px">'+trovati.length+' risultato/i trovato/i:</p>'+
-    trovati.map(function(i){
-      const scadEffettiva=scadenzaEffettiva(i);
-      const stScad=statoScadenza(scadEffettiva);
-      const cardCls=stScad==='expired'?'expired':(stScad==='warn'?'warn':'');
-      const textCls=stScad==='expired'?'expired-text':(stScad==='warn'?'warn-text':'');
-      const azioniHtml=dispensaView==='dispensa'
-        ? '<button class="pantry-btn" onclick="apriEditDispensaItem(\''+i.id+'\')"><i class="ti ti-pencil"></i></button>'+
-          '<button class="pantry-btn" onclick="apriLotto(\''+i.id+'\')"><i class="ti ti-package"></i> Apri</button>'+
-          '<button class="pantry-btn danger" onclick="eliminaLotto(\''+i.id+'\')"><i class="ti ti-trash"></i></button>'
-        : '<button class="pantry-btn" onclick="apriEditDispensaItem(\''+i.id+'\')"><i class="ti ti-pencil"></i></button>'+
-          '<button class="pantry-btn" onclick="segnaTerminato(\''+i.id+'\')"><i class="ti ti-check"></i> Terminato</button>';
-      return '<div class="pantry-card '+cardCls+'" style="margin-bottom:6px">'+
-        '<div class="pantry-top">'+
-          '<div style="flex:1">'+
-            '<div class="pantry-name '+textCls+'">'+esc(i.nome)+'</div>'+
-            '<div class="pantry-sub">'+(scadEffettiva?'Scad. '+formatDataIt(scadEffettiva):'Nessuna scadenza')+etichettaScadenza(scadEffettiva)+(i.dataapertura?' · Aperto il '+formatDataIt(i.dataapertura):'')+'</div>'+
+  function renderRisultatiSezione(lista,sezione){
+    if(!lista.length) return '';
+    const titoloSezione=sezione==='dispensa'?'📦 In Dispensa':'🔓 In Uso';
+    return '<p style="font-size:12px;color:#888780;margin:10px 0 6px">'+titoloSezione+' — '+lista.length+' trovato/i</p>'+
+      lista.map(function(i){
+        const scadEffettiva=scadenzaEffettiva(i);
+        const stScad=statoScadenza(scadEffettiva);
+        const cardCls=stScad==='expired'?'expired':(stScad==='warn'?'warn':'');
+        const textCls=stScad==='expired'?'expired-text':(stScad==='warn'?'warn-text':'');
+        const azioniHtml=sezione==='dispensa'
+          ? '<button class="pantry-btn" onclick="apriEditDispensaItem(\''+i.id+'\')"><i class="ti ti-pencil"></i></button>'+
+            '<button class="pantry-btn" onclick="apriLotto(\''+i.id+'\')"><i class="ti ti-package"></i> Apri</button>'+
+            '<button class="pantry-btn danger" onclick="eliminaLotto(\''+i.id+'\')"><i class="ti ti-trash"></i></button>'
+          : '<button class="pantry-btn" onclick="apriEditDispensaItem(\''+i.id+'\')"><i class="ti ti-pencil"></i></button>'+
+            '<button class="pantry-btn" onclick="segnaTerminato(\''+i.id+'\')"><i class="ti ti-check"></i> Terminato</button>';
+        return '<div class="pantry-card '+cardCls+'" style="margin-bottom:6px">'+
+          '<div class="pantry-top">'+
+            '<div style="flex:1">'+
+              '<div class="pantry-name '+textCls+'">'+esc(i.nome)+'</div>'+
+              '<div class="pantry-sub">'+(scadEffettiva?'Scad. '+formatDataIt(scadEffettiva):'Nessuna scadenza')+etichettaScadenza(scadEffettiva)+(sezione==='dispensa'?etichettaScadenzaFissa(i.tiposcad):'')+(i.dataapertura?' · Aperto il '+formatDataIt(i.dataapertura):'')+'</div>'+
+            '</div>'+
           '</div>'+
-        '</div>'+
-        '<div class="pantry-actions" style="margin-top:8px">'+azioniHtml+'</div>'+
-      '</div>';
-    }).join('');
+          '<div class="pantry-actions" style="margin-top:8px">'+azioniHtml+'</div>'+
+        '</div>';
+      }).join('');
+  }
+
+  risultatoEl.innerHTML=
+    '<p style="font-size:12px;color:#888780;margin-bottom:4px">Trovato: '+trovatiDispensa.length+' in Dispensa, '+trovatiUso.length+' in Uso</p>'+
+    renderRisultatiSezione(trovatiDispensa,'dispensa')+
+    renderRisultatiSezione(trovatiUso,'uso');
 }
 
 async function aggiungiAllaListaDaCodiceRicerca(codice){
