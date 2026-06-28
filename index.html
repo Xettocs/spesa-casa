@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v223</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v224</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1490,7 +1490,18 @@ function eseguiRicercaProdotto(){
   const trovati=dispensaItems.filter(i=>String(i.codice||'').trim().replace(/\s/g,'')===codiceNormalizzato&&i.stato===statoCercato);
 
   if(!trovati.length){
-    risultatoEl.innerHTML='<p style="font-size:13px;color:#993C1D">Nessun prodotto trovato in '+(dispensaView==='dispensa'?'In Dispensa':'In Uso')+' con questo codice</p>';
+    risultatoEl.innerHTML='<p style="font-size:13px;color:#993C1D;margin-bottom:10px">Nessun prodotto trovato in '+(dispensaView==='dispensa'?'In Dispensa':'In Uso')+' con questo codice</p>'+
+      '<button type="button" class="btn" id="btn-aggiungi-prodotto-da-ricerca"><i class="ti ti-plus"></i> Aggiungi prodotto</button>'+
+      '<button type="button" class="btn btn-outline" id="btn-aggiungi-da-ricerca" style="margin-top:8px"><i class="ti ti-shopping-cart"></i> Aggiungi alla lista della spesa</button>';
+    const btnAggProdotto=document.getElementById('btn-aggiungi-prodotto-da-ricerca');
+    if(btnAggProdotto) btnAggProdotto.addEventListener('click',async function(){
+      fermaScanner();
+      await gestisciCodiceScansionato(codiceNormalizzato);
+    });
+    const btnAgg=document.getElementById('btn-aggiungi-da-ricerca');
+    if(btnAgg) btnAgg.addEventListener('click',async function(){
+      await aggiungiAllaListaDaCodiceRicerca(codiceNormalizzato);
+    });
     return;
   }
 
@@ -1516,6 +1527,19 @@ function eseguiRicercaProdotto(){
         '<div class="pantry-actions" style="margin-top:8px">'+azioniHtml+'</div>'+
       '</div>';
     }).join('');
+}
+
+async function aggiungiAllaListaDaCodiceRicerca(codice){
+  // tenta di recuperare un nome leggibile dallo storico, altrimenti usa il codice stesso
+  let nomeDaAggiungere=codice;
+  try{
+    const rStorico=await api({action:'cercaCodice',codice});
+    if(rStorico.trovato){
+      nomeDaAggiungere=[rStorico.marca,rStorico.tipo].filter(Boolean).join(' ')||rStorico.tipo||codice;
+    }
+  }catch(e){/* usa il codice come nome di fallback */}
+  await aggiungiAllaListaDaDispensa(nomeDaAggiungere);
+  chiudiEdit();
 }
 
 function apriScannerPerRicerca(){
