@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v228</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v229</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1807,6 +1807,7 @@ function apriEditDispensaItem(id){
   const item=dispensaItems.find(i=>i.id===id);
   if(!item) return;
   const isUso=item.stato==='uso';
+  const haCodice=!!item.codice;
   apriEdit(`
     <h3><i class="ti ti-pencil"></i> Modifica prodotto</h3>
     <label>Categoria</label>
@@ -1844,6 +1845,14 @@ function apriEditDispensaItem(id){
       <option value="11" ${String(item.tiposcad)==='11'?'selected':''}>11 mesi dopo apertura</option>
       <option value="12" ${String(item.tiposcad)==='12'?'selected':''}>12 mesi dopo apertura</option>
     </select>
+    ${haCodice?`
+    <div style="margin-top:12px;padding:10px;background:#f5f4f0;border-radius:8px">
+      <label style="display:flex;align-items:flex-start;gap:8px;margin-top:0;cursor:pointer">
+        <input type="checkbox" id="ed-disp-applica-tutti" style="width:auto;margin-top:2px">
+        <span style="font-size:12px;color:#1a1a18">Applica Categoria/Prodotto/Marca/Scadenza fissa a <strong>tutti</strong> i prodotti con questo codice a barre (In Dispensa, In Uso e nel database personale) — utile per correggere errori di battitura</span>
+      </label>
+    </div>
+    `:''}
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
       <button type="button" class="edit-save" onclick="salvaEditDispensaItem('${id}')">Salva modifiche</button>
@@ -1860,11 +1869,36 @@ async function salvaEditDispensaItem(id){
   const scadenza=document.getElementById('ed-disp-scadenza').value;
   const tiposcad=document.getElementById('ed-disp-tiposcad').value;
   const dataapertura=item.stato==='uso'?(document.getElementById('ed-disp-dataapertura').value||item.dataapertura):item.dataapertura;
+  const checkboxTutti=document.getElementById('ed-disp-applica-tutti');
+  const applicaATutti=checkboxTutti&&checkboxTutti.checked;
   if(!tipo){toast('⚠️ Inserisci almeno il Prodotto');return;}
-  const ok=await conferma('Confermi le modifiche a questo prodotto?','Salva',true);
+  const messaggioConferma=applicaATutti
+    ?`Confermi le modifiche? Categoria/Prodotto/Marca/Scadenza fissa verranno applicate a TUTTI i prodotti con questo codice a barre.`
+    :'Confermi le modifiche a questo prodotto?';
+  const ok=await conferma(messaggioConferma,'Salva',true);
   if(!ok) return;
   chiudiEdit();
   const nome=[marca,tipo].filter(Boolean).join(' ')||tipo;
+
+  if(applicaATutti&&item.codice){
+    try{
+      const res=await api({action:'aggiornaTuttiPerCodice',codice:item.codice,cat,tipo,marca,tiposcad});
+      if(res.errore) throw new Error(res.errore);
+      // aggiorna anche i dati locali per tutti i lotti con lo stesso codice
+      dispensaItems.forEach(x=>{
+        if(x.codice===item.codice){
+          x.cat=cat;x.tipo=tipo;x.marca=marca;x.nome=nome;x.tiposcad=tiposcad;
+        }
+      });
+      // la scadenza specifica e la data apertura restano individuali per il lotto modificato
+      item.scadenza=scadenza;item.dataapertura=dataapertura;
+      try{await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome,cat,stato:item.stato,scadenza,tiposcad,dataapertura,persona:currentUser,tipo,marca});}catch(e2){}
+      renderDispensa();aggiornaBadgeDispensa();
+      toast(`✓ Aggiornati ${res.righeAggiornate||0} prodotti con questo codice`);
+    }catch(e){toast('❌ Errore modifica: '+(e.message||'sconosciuto'));}
+    return;
+  }
+
   try{
     const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome,cat,stato:item.stato,scadenza,tiposcad,dataapertura,persona:currentUser,tipo,marca});
     if(res.errore) throw new Error();
