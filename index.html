@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v237</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v238</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1419,10 +1419,10 @@ async function eliminaLotto(id){
   const nomeAttuale=nomeProdotto(item);
   const ok=await conferma(`Eliminare "${nomeAttuale}" dalla dispensa?`,'Elimina',false);
   if(!ok) return;
-  dispensaItems=dispensaItems.filter(i=>i.id!==id);
+  const oggi=new Date().toISOString().split('T')[0];
+  item.stato='eliminato';item.dataMovimento=oggi;
   chiudiEdit();
   renderDispensa();aggiornaBadgeDispensa();
-  const oggi=new Date().toISOString().split('T')[0];
   try{
     await api({action:'delete',foglio:'Dispensa',id,motivo:'eliminato',datamovimento:oggi,persona:currentUser});
     toast('Prodotto eliminato');
@@ -1435,10 +1435,10 @@ async function eliminaInUso(id){
   const nomeAttuale=nomeProdotto(item);
   const ok=await conferma(`Eliminare "${nomeAttuale}"? Verrà registrato come prodotto non terminato (spreco).`,'Elimina',false);
   if(!ok) return;
-  dispensaItems=dispensaItems.filter(i=>i.id!==id);
+  const oggi=new Date().toISOString().split('T')[0];
+  item.stato='eliminato';item.dataMovimento=oggi;
   chiudiEdit();
   renderDispensa();aggiornaBadgeDispensa();
-  const oggi=new Date().toISOString().split('T')[0];
   try{
     await api({action:'delete',foglio:'Dispensa',id,motivo:'eliminato',datamovimento:oggi,persona:currentUser});
     toast('Prodotto eliminato');
@@ -1451,10 +1451,10 @@ async function segnaTerminato(id){
   const nomeAttuale=nomeProdotto(item);
   const ok=await conferma(`"${nomeAttuale}" è terminato?`,'Sì, terminato',true);
   if(!ok) return;
-  dispensaItems=dispensaItems.filter(i=>i.id!==id);
+  const oggi=new Date().toISOString().split('T')[0];
+  item.stato='terminato';item.dataMovimento=oggi;
   chiudiEdit();
   renderDispensa();aggiornaBadgeDispensa();
-  const oggi=new Date().toISOString().split('T')[0];
   try{
     await api({action:'delete',foglio:'Dispensa',id,motivo:'terminato',datamovimento:oggi,persona:currentUser});
     // calcola le quantità residue dello stesso prodotto, dopo la rimozione di quello appena terminato
