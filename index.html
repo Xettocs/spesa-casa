@@ -145,7 +145,7 @@ select:focus,input:focus{border-color:#534AB7}
   <div class="login-card">
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
-    <div class="login-sub">Antonio &amp; Concetta <span style="opacity:.5;font-size:11px">· v198</span></div>
+    <div class="login-sub">Antonio &amp; Concetta <span style="opacity:.5;font-size:11px">· v201</span></div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1696,7 +1696,7 @@ async function avviaScanner(){
 
     let testStream;
     try{
-      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:960},height:{ideal:540}}});
+      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
     }catch(permErr){
       if(statusEl) statusEl.textContent='2. Fallback vincoli base...';
       try{
@@ -1760,15 +1760,32 @@ async function avviaScanner(){
 
     try{
       let giaGestito=false;
+      let ultimoCodiceLetto=null;
+      let conteggioLetture=0;
       zxingReader.decodeFromVideoDevice(deviceId,videoEl,async(result,err,controls)=>{
         if(result && !giaGestito){
-          giaGestito=true;
-          const codice=result.getText();
-          if(statusEl) statusEl.textContent='✓ Codice rilevato: '+codice;
-          controls.stop();
-          fermaScanner();
-          chiudiEdit();
-          await gestisciCodiceScansionato(codice);
+          const codiceLetto=result.getText();
+          // scarta letture che non sembrano un codice a barre valido (EAN-13, EAN-8, UPC-A, UPC-E sono tutti numerici)
+          if(!/^\d{6,14}$/.test(codiceLetto)){
+            if(statusEl) statusEl.textContent='Lettura scartata (formato non valido), continuo...';
+            ultimoCodiceLetto=null;conteggioLetture=0;
+            return;
+          }
+          if(codiceLetto===ultimoCodiceLetto){
+            conteggioLetture++;
+          } else {
+            ultimoCodiceLetto=codiceLetto;
+            conteggioLetture=1;
+          }
+          if(statusEl) statusEl.textContent='Rilevato: '+codiceLetto+' (conferma '+conteggioLetture+'/2)';
+          if(conteggioLetture>=2){
+            giaGestito=true;
+            if(statusEl) statusEl.textContent='✓ Codice confermato: '+codiceLetto;
+            controls.stop();
+            fermaScanner();
+            chiudiEdit();
+            await gestisciCodiceScansionato(codiceLetto);
+          }
           return;
         }
         if(err && statusEl && !statusEl.dataset.errShown){
