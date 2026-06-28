@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v238</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v239</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1971,23 +1971,35 @@ function salvaImpostazioniDispensa(){
 let chartSpreco=null;
 
 function apriReportSpreco(){
+  const anniDisponibili=[...new Set(dispensaItems.filter(i=>(i.stato==='terminato'||i.stato==='eliminato')&&i.dataMovimento).map(i=>String(i.dataMovimento).substring(0,4)))].sort((a,b)=>b-a);
   const html=
     '<h3><i class="ti ti-chart-pie"></i> Report consumi</h3>'+
     '<p style="font-size:12px;color:#888780;margin-bottom:10px">Confronto tra prodotti effettivamente usati (terminati) e prodotti buttati senza essere consumati (eliminati)</p>'+
-    '<label>Filtra per categoria</label>'+
-    '<select id="report-cat-filter">'+
-      '<option value="">— Tutte le categorie —</option>'+
-      '<option value="Alimenti">🍽️ Alimenti</option>'+
-      '<option value="Cosmetici">🧴 Cosmetici</option>'+
-      '<option value="Prodotti per la casa">🏠 Prodotti per la casa</option>'+
-      '<option value="Igiene personale">🧼 Igiene personale</option>'+
-      '<option value="Farmaceutici">💊 Farmaceutici</option>'+
-      '<option value="Altro">📦 Altro</option>'+
-    '</select>'+
-    '<div id="report-spreco-stats" style="margin-top:14px"></div>'+
+    '<div class="row3" style="margin-bottom:10px">'+
+      '<div><select id="report-mese-filter"><option value="">Mese</option>'+
+        '<option value="1">Gennaio</option><option value="2">Febbraio</option><option value="3">Marzo</option>'+
+        '<option value="4">Aprile</option><option value="5">Maggio</option><option value="6">Giugno</option>'+
+        '<option value="7">Luglio</option><option value="8">Agosto</option><option value="9">Settembre</option>'+
+        '<option value="10">Ottobre</option><option value="11">Novembre</option><option value="12">Dicembre</option>'+
+      '</select></div>'+
+      '<div><select id="report-anno-filter"><option value="">Anno</option>'+
+        anniDisponibili.map(a=>'<option value="'+a+'">'+a+'</option>').join('')+
+      '</select></div>'+
+      '<div><select id="report-cat-filter"><option value="">Categoria</option>'+
+        '<option value="Alimenti">🍽️ Alimenti</option>'+
+        '<option value="Cosmetici">🧴 Cosmetici</option>'+
+        '<option value="Prodotti per la casa">🏠 Prodotti per la casa</option>'+
+        '<option value="Igiene personale">🧼 Igiene personale</option>'+
+        '<option value="Farmaceutici">💊 Farmaceutici</option>'+
+        '<option value="Altro">📦 Altro</option>'+
+      '</select></div>'+
+    '</div>'+
+    '<div id="report-spreco-stats" style="margin-top:6px"></div>'+
     '<div class="chart-wrap" style="height:220px;margin-top:8px"><canvas id="chartSpreco"></canvas></div>'+
     '<div class="edit-btns"><button type="button" class="edit-cancel" onclick="chiudiReportSpreco()">Chiudi</button></div>';
   apriEdit(html);
+  document.getElementById('report-mese-filter').addEventListener('change',renderReportSpreco);
+  document.getElementById('report-anno-filter').addEventListener('change',renderReportSpreco);
   document.getElementById('report-cat-filter').addEventListener('change',renderReportSpreco);
   renderReportSpreco();
 }
@@ -1998,9 +2010,14 @@ function chiudiReportSpreco(){
 }
 
 function renderReportSpreco(){
+  const mese=document.getElementById('report-mese-filter').value;
+  const anno=document.getElementById('report-anno-filter').value;
   const catFiltro=document.getElementById('report-cat-filter').value;
+
   let datiFiltrati=dispensaItems.filter(i=>i.stato==='terminato'||i.stato==='eliminato');
   if(catFiltro) datiFiltrati=datiFiltrati.filter(i=>i.cat===catFiltro);
+  if(anno) datiFiltrati=datiFiltrati.filter(i=>i.dataMovimento&&String(i.dataMovimento).substring(0,4)===anno);
+  if(mese) datiFiltrati=datiFiltrati.filter(i=>i.dataMovimento&&parseInt(String(i.dataMovimento).substring(5,7))===parseInt(mese));
 
   const terminati=datiFiltrati.filter(i=>i.stato==='terminato').length;
   const eliminati=datiFiltrati.filter(i=>i.stato==='eliminato').length;
@@ -2009,7 +2026,7 @@ function renderReportSpreco(){
 
   const statsEl=document.getElementById('report-spreco-stats');
   if(totale===0){
-    statsEl.innerHTML='<div class="empty">Nessun dato disponibile per questa categoria</div>';
+    statsEl.innerHTML='<div class="empty">Nessun dato disponibile per questo periodo/categoria</div>';
   }else{
     statsEl.innerHTML=
       '<div class="stat-grid">'+
