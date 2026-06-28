@@ -1166,7 +1166,7 @@ async function ricaricaDispensa(){
     dispensaItems=(data.dati||[]).slice(1).filter(r=>r[0]).map(r=>({
       id:String(r[0]),codice:r[1]||'',nome:r[2],cat:r[3]||'',stato:r[4]||'chiuso',
       scadenza:r[5]||'',tiposcad:r[6]||'',dataapertura:r[7]||'',persona:r[8]||'',
-      tipo:r[9]||'',modello:r[10]||'',marca:r[11]||''
+      tipo:r[9]||'',marca:r[10]||''
     }));
   }catch(e){toast('❌ Errore caricamento dispensa');}
   renderDispensa();
@@ -1429,10 +1429,8 @@ function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
       <option value="Farmaceutici" ${base.categoria==='Farmaceutici'?'selected':''}>💊 Farmaceutici</option>
       <option value="Altro" ${base.categoria==='Altro'?'selected':''}>📦 Altro</option>
     </select>
-    <label>Tipo</label>
+    <label>Prodotto</label>
     <input type="text" id="disp-tipo" placeholder="es. Pasta, Dentifricio, Acqua..." value="${esc(base.tipo||'')}">
-    <label>Modello</label>
-    <input type="text" id="disp-modello" placeholder="es. Spaghetti, Rigenerante, Naturale..." value="${esc(base.modello||'')}">
     <label>Marca</label>
     <input type="text" id="disp-marca" placeholder="es. Barilla, Oral B, Sant'Anna..." value="${esc(base.marca||'')}">
     ${paccoAttuale===1?`
@@ -1479,7 +1477,6 @@ async function verificaCodiceManuale(){
     if(statusEl) statusEl.textContent='✓ Prodotto già registrato — campi precompilati';
     document.getElementById('disp-categoria').value=trovato.cat||'Alimenti';
     document.getElementById('disp-tipo').value=trovato.tipo||'';
-    document.getElementById('disp-modello').value=trovato.modello||'';
     document.getElementById('disp-marca').value=trovato.marca||'';
     return;
   }
@@ -1492,7 +1489,6 @@ async function verificaCodiceManuale(){
       if(statusEl) statusEl.textContent='✓ Prodotto trovato nello storico — campi precompilati';
       document.getElementById('disp-categoria').value=rStorico.cat||'Alimenti';
       document.getElementById('disp-tipo').value=rStorico.tipo||'';
-      document.getElementById('disp-modello').value=rStorico.modello||'';
       document.getElementById('disp-marca').value=rStorico.marca||'';
       return;
     }
@@ -1570,10 +1566,8 @@ function apriEditDispensaItem(id){
       <option value="Farmaceutici" ${item.cat==='Farmaceutici'?'selected':''}>💊 Farmaceutici</option>
       <option value="Altro" ${item.cat==='Altro'?'selected':''}>📦 Altro</option>
     </select>
-    <label>Tipo</label>
+    <label>Prodotto</label>
     <input type="text" id="ed-disp-tipo" value="${esc(item.tipo||'')}">
-    <label>Modello</label>
-    <input type="text" id="ed-disp-modello" value="${esc(item.modello||'')}">
     <label>Marca</label>
     <input type="text" id="ed-disp-marca" value="${esc(item.marca||'')}">
     <label>Scadenza confezione (opzionale)</label>
@@ -1610,20 +1604,19 @@ async function salvaEditDispensaItem(id){
   if(!item) return;
   const cat=document.getElementById('ed-disp-categoria').value;
   const tipo=document.getElementById('ed-disp-tipo').value.trim();
-  const modello=document.getElementById('ed-disp-modello').value.trim();
   const marca=document.getElementById('ed-disp-marca').value.trim();
   const scadenza=document.getElementById('ed-disp-scadenza').value;
   const tiposcad=document.getElementById('ed-disp-tiposcad').value;
   const dataapertura=item.stato==='uso'?(document.getElementById('ed-disp-dataapertura').value||item.dataapertura):item.dataapertura;
-  if(!tipo){toast('⚠️ Inserisci almeno il Tipo del prodotto');return;}
+  if(!tipo){toast('⚠️ Inserisci almeno il Prodotto');return;}
   const ok=await conferma('Confermi le modifiche a questo prodotto?','Salva',true);
   if(!ok) return;
   chiudiEdit();
-  const nome=[marca,tipo,modello].filter(Boolean).join(' ')||tipo;
+  const nome=[marca,tipo].filter(Boolean).join(' ')||tipo;
   try{
-    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome,cat,stato:item.stato,scadenza,tiposcad,dataapertura,persona:currentUser,tipo,modello,marca});
+    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome,cat,stato:item.stato,scadenza,tiposcad,dataapertura,persona:currentUser,tipo,marca});
     if(res.errore) throw new Error();
-    item.cat=cat;item.tipo=tipo;item.modello=modello;item.marca=marca;item.nome=nome;
+    item.cat=cat;item.tipo=tipo;item.marca=marca;item.nome=nome;
     item.scadenza=scadenza;item.tiposcad=tiposcad;item.dataapertura=dataapertura;
     renderDispensa();aggiornaBadgeDispensa();
     toast('✓ Prodotto modificato');
@@ -1830,15 +1823,15 @@ async function gestisciCodiceScansionato(codice){
   // 1. cerca nel foglio Dispensa (prodotto attualmente presente)
   const trovato=dispensaItems.find(i=>i.codice===codice);
   if(trovato){
-    mostraFormProdotto({categoria:trovato.cat,tipo:trovato.tipo,modello:trovato.modello,marca:trovato.marca},1,1,codice);
+    mostraFormProdotto({categoria:trovato.cat,tipo:trovato.tipo,marca:trovato.marca},1,1,codice);
     return;
   }
-  // 2. cerca nello storico (prodotto già conosciuto ma terminato/eliminato in passato)
+  // 2. cerca nello storico (anagrafica permanente)
   toast('🔍 Ricerca prodotto...');
   try{
     const rStorico=await api({action:'cercaCodice',codice});
     if(rStorico.trovato){
-      mostraFormProdotto({categoria:rStorico.cat,tipo:rStorico.tipo,modello:rStorico.modello,marca:rStorico.marca},1,1,codice);
+      mostraFormProdotto({categoria:rStorico.cat,tipo:rStorico.tipo,marca:rStorico.marca},1,1,codice);
       return;
     }
   }catch(e){/* prosegue con la ricerca online */}
@@ -1854,14 +1847,15 @@ async function gestisciCodiceScansionato(codice){
       if(marca&&nomeCompleto.toLowerCase().startsWith(marca.toLowerCase())){
         tipo=nomeCompleto.substring(marca.length).trim();
       }
-      mostraFormProdotto({categoria:'Alimenti',tipo:tipo||nomeCompleto||'',modello:'',marca},1,1,codice);
+      mostraFormProdotto({categoria:'Alimenti',tipo:tipo||nomeCompleto||'',marca},1,1,codice);
+      if(codice){api({action:'salvaAnagrafica',codice,cat:'Alimenti',tipo:tipo||nomeCompleto||'',marca}).catch(()=>{});}
     }else{
       const proseguire=await conferma(`Prodotto non trovato nel database online. Procedere con l'inserimento manuale?`,'Sì, inserisci',true);
-      if(proseguire) mostraFormProdotto({categoria:'Alimenti',tipo:'',modello:'',marca:''},1,1,codice);
+      if(proseguire) mostraFormProdotto({categoria:'Alimenti',tipo:'',marca:''},1,1,codice);
     }
   }catch(e){
     const proseguire=await conferma(`Errore di ricerca online. Procedere con l'inserimento manuale?`,'Sì, inserisci',true);
-    if(proseguire) mostraFormProdotto({categoria:'Alimenti',tipo:'',modello:'',marca:''},1,1,codice);
+    if(proseguire) mostraFormProdotto({categoria:'Alimenti',tipo:'',marca:''},1,1,codice);
   }
 }
 
