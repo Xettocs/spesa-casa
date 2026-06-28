@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v212</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v213</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1466,8 +1466,9 @@ function eseguiRicercaProdotto(){
   const risultatoEl=document.getElementById('cerca-risultato');
   if(!codice){risultatoEl.innerHTML='<p style="font-size:13px;color:#993C1D">Inserisci un codice</p>';return;}
 
+  const codiceNormalizzato=String(codice).trim().replace(/\s/g,'');
   const statoCercato=dispensaView==='dispensa'?'chiuso':'uso';
-  const trovati=dispensaItems.filter(i=>i.codice===codice&&i.stato===statoCercato);
+  const trovati=dispensaItems.filter(i=>String(i.codice||'').trim().replace(/\s/g,'')===codiceNormalizzato&&i.stato===statoCercato);
 
   if(!trovati.length){
     risultatoEl.innerHTML='<p style="font-size:13px;color:#993C1D">Nessun prodotto trovato in '+(dispensaView==='dispensa'?'In Dispensa':'In Uso')+' con questo codice</p>';
