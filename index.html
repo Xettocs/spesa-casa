@@ -428,6 +428,7 @@ select:focus,input:focus{border-color:#534AB7}
 
 </div>
 <div class="toast" id="toast"></div>
+<div id="debug-fisso" style="position:fixed;bottom:0;left:0;right:0;max-height:140px;overflow-y:auto;background:#000;color:#0f0;font-family:monospace;font-size:10px;padding:8px;z-index:99999;white-space:pre-wrap;word-break:break-all;display:none"></div>
 
 <script>
 const WEBAPP_URL='https://script.google.com/macros/s/AKfycbwKSxYq9rWwgN81y-_nlqneeJTfOADPjikheEYMTAVxari4KiYjH-Lhs-p7AaOEZcbt/exec';
@@ -509,6 +510,13 @@ function toast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2400);
+}
+function debugFisso(msg){
+  const d=document.getElementById('debug-fisso');
+  if(!d) return;
+  d.style.display='block';
+  d.textContent+=(d.textContent?'\n':'')+(new Date().toLocaleTimeString())+' '+msg;
+  d.scrollTop=d.scrollHeight;
 }
 function parseImporto(val){
   let s=String(val).trim().replace(/\s/g,'');
