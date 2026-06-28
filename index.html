@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v231</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v234</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1615,9 +1615,9 @@ async function verificaCodiceManuale(){
     }
   }catch(e){/* prosegue con la ricerca online */}
 
-  // 3. cerca su Open Food Facts
+  // 3. cerca online: Open Food Facts + Open Beauty Facts + Open Products Facts (chiamata universale)
   try{
-    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json`);
+    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json?product_type=all`);
     const data=await r.json();
     if(data.status===1&&data.product){
       const nomeCompleto=data.product.product_name||data.product.product_name_it||'';
@@ -1626,7 +1626,10 @@ async function verificaCodiceManuale(){
       if(marca&&nomeCompleto.toLowerCase().startsWith(marca.toLowerCase())){
         tipo=nomeCompleto.substring(marca.length).trim();
       }
+      const tipoProdotto=data.product.product_type||'food';
+      const categoriaMappata=tipoProdotto==='beauty'?'Cosmetici':(tipoProdotto==='product'?'Prodotti per la casa':'Alimenti');
       if(statusEl) statusEl.textContent='✓ Prodotto trovato online — campi precompilati';
+      document.getElementById('disp-categoria').value=categoriaMappata;
       document.getElementById('disp-tipo').value=tipo||nomeCompleto||'';
       document.getElementById('disp-marca').value=marca||'';
     }else{
@@ -2013,20 +2016,22 @@ async function gestisciCodiceScansionato(codice){
       return;
     }
   }catch(e){/* prosegue con la ricerca online */}
-  // 3. cerca su Open Food Facts
+  // 3. cerca online: Open Food Facts + Open Beauty Facts + Open Products Facts (chiamata universale)
   try{
-    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json`);
+    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json?product_type=all`);
     const data=await r.json();
     if(data.status===1&&data.product){
       const nomeCompleto=data.product.product_name||data.product.product_name_it||'';
       const marca=data.product.brands?data.product.brands.split(',')[0].trim():'';
-      // tentativo di separare marca dal resto del nome
       let tipo=nomeCompleto;
       if(marca&&nomeCompleto.toLowerCase().startsWith(marca.toLowerCase())){
         tipo=nomeCompleto.substring(marca.length).trim();
       }
-      mostraFormProdotto({categoria:'Alimenti',tipo:tipo||nomeCompleto||'',marca},1,1,codice);
-      if(codice){api({action:'salvaAnagrafica',codice,cat:'Alimenti',tipo:tipo||nomeCompleto||'',marca}).catch(()=>{});}
+      // determina la categoria in base al tipo di prodotto restituito dall'API universale
+      const tipoProdotto=data.product.product_type||'food';
+      const categoriaMappata=tipoProdotto==='beauty'?'Cosmetici':(tipoProdotto==='product'?'Prodotti per la casa':'Alimenti');
+      mostraFormProdotto({categoria:categoriaMappata,tipo:tipo||nomeCompleto||'',marca},1,1,codice);
+      if(codice){api({action:'salvaAnagrafica',codice,cat:categoriaMappata,tipo:tipo||nomeCompleto||'',marca}).catch(()=>{});}
     }else{
       const proseguire=await conferma(`Prodotto non trovato nel database online. Procedere con l'inserimento manuale?`,'Sì, inserisci',true);
       if(proseguire) mostraFormProdotto({categoria:'Alimenti',tipo:'',marca:''},1,1,codice);
