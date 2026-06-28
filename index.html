@@ -145,7 +145,8 @@ select:focus,input:focus{border-color:#534AB7}
   <div class="login-card">
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
-    <div class="login-sub">Antonio &amp; Concetta <span style="opacity:.5;font-size:11px">· v208</span></div>
+    <div class="login-sub">Antonio &amp; Concetta</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v212</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -416,12 +417,22 @@ select:focus,input:focus{border-color:#534AB7}
     </div>
     <button class="btn" onclick="apriScanner()"><i class="ti ti-barcode"></i> Scansiona codice a barre</button>
     <button class="btn btn-outline" onclick="apriAggiungiManualeDispensa()"><i class="ti ti-plus"></i> Aggiungi manualmente</button>
+    <button class="btn btn-outline" onclick="apriCercaProdotto()"><i class="ti ti-search"></i> Cerca per codice a barre</button>
   </div>
   <div class="card">
     <div class="tab-cat">
       <div class="tab-cat-item active" id="disp-tab-dispensa" onclick="setDispensaView('dispensa')">In Dispensa</div>
       <div class="tab-cat-item" id="disp-tab-uso" onclick="setDispensaView('uso')">In Uso</div>
     </div>
+    <label>Filtra per categoria</label>
+    <select id="disp-filtro-categoria" onchange="renderDispensa()">
+      <option value="">— Tutte le categorie —</option>
+      <option value="Alimenti">🍽️ Alimenti</option>
+      <option value="Cosmetici">🧴 Cosmetici</option>
+      <option value="Prodotti per la casa">🏠 Prodotti per la casa</option>
+      <option value="Farmaceutici">💊 Farmaceutici</option>
+      <option value="Altro">📦 Altro</option>
+    </select>
     <div id="dispensa-list"><div class="empty">Caricamento...</div></div>
   </div>
 </div>
@@ -1237,7 +1248,9 @@ function aggiornaBadgeDispensa(){
 
 function renderDispensa(){
   const el=document.getElementById('dispensa-list');
-  const filtered=dispensaItems.filter(i=>i.stato===(dispensaView==='dispensa'?'chiuso':'uso'));
+  const catFiltro=document.getElementById('disp-filtro-categoria').value;
+  let filtered=dispensaItems.filter(i=>i.stato===(dispensaView==='dispensa'?'chiuso':'uso'));
+  if(catFiltro) filtered=filtered.filter(i=>i.cat===catFiltro);
   // gli stati "archiviato" sono esclusi automaticamente dal filtro sopra (non sono né 'chiuso' né 'uso')
   if(!filtered.length){el.innerHTML='<div class="empty">Nessun prodotto</div>';return;}
 
@@ -1421,6 +1434,74 @@ async function aggiungiAllaListaDaDispensa(nome){
 
 function apriAggiungiManualeDispensa(){
   mostraFormProdotto({},1,1,null);
+}
+
+function apriCercaProdotto(){
+  const vistaLabel=dispensaView==='dispensa'?'In Dispensa':'In Uso';
+  const html=
+    '<h3><i class="ti ti-search"></i> Cerca per codice a barre</h3>'+
+    '<p style="font-size:12px;color:#888780;margin-bottom:4px">Ricerca nella sezione attiva: <strong>'+vistaLabel+'</strong></p>'+
+    '<label>Codice a barre</label>'+
+    '<input type="text" id="cerca-codice" placeholder="es. 8001090341688" inputmode="numeric">'+
+    '<button type="button" class="btn btn-outline" id="btn-scan-in-cerca" style="margin-top:8px"><i class="ti ti-barcode"></i> Scansiona invece di digitare</button>'+
+    '<div id="cerca-risultato" style="margin-top:14px"></div>'+
+    '<div class="edit-btns">'+
+      '<button type="button" class="edit-cancel" onclick="chiudiEdit()">Chiudi</button>'+
+      '<button type="button" class="edit-save" id="btn-cerca-prodotto">Cerca</button>'+
+    '</div>';
+  apriEdit(html);
+  const btnCerca=document.getElementById('btn-cerca-prodotto');
+  if(btnCerca) btnCerca.addEventListener('click',eseguiRicercaProdotto);
+  const inputCerca=document.getElementById('cerca-codice');
+  if(inputCerca) inputCerca.addEventListener('keydown',function(ev){if(ev.key==='Enter') eseguiRicercaProdotto();});
+  const btnScan=document.getElementById('btn-scan-in-cerca');
+  if(btnScan) btnScan.addEventListener('click',function(){
+    fermaScanner();
+    apriScannerPerRicerca();
+  });
+}
+
+function eseguiRicercaProdotto(){
+  const codice=document.getElementById('cerca-codice').value.trim();
+  const risultatoEl=document.getElementById('cerca-risultato');
+  if(!codice){risultatoEl.innerHTML='<p style="font-size:13px;color:#993C1D">Inserisci un codice</p>';return;}
+
+  const statoCercato=dispensaView==='dispensa'?'chiuso':'uso';
+  const trovati=dispensaItems.filter(i=>i.codice===codice&&i.stato===statoCercato);
+
+  if(!trovati.length){
+    risultatoEl.innerHTML='<p style="font-size:13px;color:#993C1D">Nessun prodotto trovato in '+(dispensaView==='dispensa'?'In Dispensa':'In Uso')+' con questo codice</p>';
+    return;
+  }
+
+  risultatoEl.innerHTML='<p style="font-size:12px;color:#888780;margin-bottom:8px">'+trovati.length+' risultato/i trovato/i:</p>'+
+    trovati.map(function(i){
+      return '<div class="pantry-card" style="margin-bottom:6px">'+
+        '<div class="pantry-name">'+esc(i.nome)+'</div>'+
+        '<div class="pantry-sub">'+(i.scadenza?'Scad. '+formatDataIt(i.scadenza):'Nessuna scadenza')+'</div>'+
+      '</div>';
+    }).join('');
+}
+
+function apriScannerPerRicerca(){
+  const html=
+    '<h3><i class="ti ti-barcode"></i> Scansiona per cercare</h3>'+
+    '<div class="scan-box"><video id="scan-video" autoplay playsinline muted></video><div class="scan-overlay"><div class="scan-frame"></div></div></div>'+
+    '<p style="font-size:12px;color:#888780;text-align:center" id="scan-status">Inquadra il codice a barre del prodotto</p>'+
+    '<div class="edit-btns"><button type="button" class="edit-cancel" id="btn-annulla-scan-ricerca">Annulla</button></div>';
+  apriEdit(html);
+  const btnAnnulla=document.getElementById('btn-annulla-scan-ricerca');
+  if(btnAnnulla) btnAnnulla.addEventListener('click',function(){fermaScanner();chiudiEdit();});
+  avviaScannerPerRicerca();
+}
+
+async function avviaScannerPerRicerca(){
+  await avviaScannerGenerico(async function(codice){
+    fermaScanner();
+    apriCercaProdotto();
+    document.getElementById('cerca-codice').value=codice;
+    eseguiRicercaProdotto();
+  });
 }
 
 function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
@@ -1690,6 +1771,14 @@ function chiudiScannerEEdit(){
 }
 
 async function avviaScanner(){
+  await avviaScannerGenerico(async function(codice){
+    fermaScanner();
+    chiudiEdit();
+    await gestisciCodiceScansionato(codice);
+  });
+}
+
+async function avviaScannerGenerico(onCodiceConfermato){
   try{
     const videoEl=document.getElementById('scan-video');
     const statusEl=document.getElementById('scan-status');
@@ -1783,9 +1872,7 @@ async function avviaScanner(){
             giaGestito=true;
             if(statusEl) statusEl.textContent='✓ Codice confermato: '+codiceLetto;
             controls.stop();
-            fermaScanner();
-            chiudiEdit();
-            await gestisciCodiceScansionato(codiceLetto);
+            await onCodiceConfermato(codiceLetto);
           }
           return;
         }
