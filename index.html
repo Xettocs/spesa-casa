@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v226</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v227</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1429,14 +1429,18 @@ async function segnaTerminato(id){
   renderDispensa();aggiornaBadgeDispensa();
   try{
     await api({action:'delete',foglio:'Dispensa',id,motivo:'terminato',persona:currentUser});
+    // calcola le quantità residue dello stesso prodotto, dopo la rimozione di quello appena terminato
+    const residuiChiusi=dispensaItems.filter(x=>x.nome===item.nome&&x.stato==='chiuso').length;
+    const residuiUso=dispensaItems.filter(x=>x.nome===item.nome&&x.stato==='uso').length;
+    const riepilogoQuantita=`Quantità residua: ${residuiChiusi} in Dispensa, ${residuiUso} in Uso.`;
     // verifica se già presente in lista della spesa
     await ricaricaSpesaSilenzioso();
     const giaPresente=listaSpesa.some(x=>!x.done&&x.text.toLowerCase().includes(item.nome.toLowerCase()));
     if(!giaPresente){
-      const ok2=await conferma(`"${item.nome}" è terminato. Aggiungerlo alla lista della spesa?`,'Sì, aggiungi',true);
+      const ok2=await conferma(`"${item.nome}" è terminato. ${riepilogoQuantita} Aggiungerlo alla lista della spesa?`,'Sì, aggiungi',true);
       if(ok2) await aggiungiAllaListaDaDispensa(item.nome);
     } else {
-      toast('✓ Terminato (già presente in lista spesa)');
+      toast(`✓ Terminato — ${riepilogoQuantita} (già in lista spesa)`);
     }
   }catch(e){toast('❌ Errore');}
 }
