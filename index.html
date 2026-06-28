@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v225</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v231</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1782,6 +1782,7 @@ function salvaImpostazioniDispensa(){
 // ---- SCANNER CODICE A BARRE (ZXing) ----
 let zxingReader=null;
 let autoRefocusInterval=null;
+let zoomInterval=null;
 
 function apriScanner(){
   apriEdit(`
@@ -1820,7 +1821,7 @@ async function avviaScannerGenerico(onCodiceConfermato){
 
     let testStream;
     try{
-      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720},advanced:[{focusMode:'continuous'}]}});
+      testStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720},advanced:[{focusMode:'continuous'},{zoom:1.8}]}});
     }catch(permErr){
       if(statusEl) statusEl.textContent='2. Fallback vincoli base...';
       try{
@@ -1881,6 +1882,25 @@ async function avviaScannerGenerico(onCodiceConfermato){
     }
 
     if(statusEl) statusEl.textContent='6. Avvio decodeFromVideoDevice...';
+
+    // Zoom progressivo automatico: se non legge nulla, aumenta lo zoom passo dopo passo
+    let livelloZoom=0;
+    const livelliZoom=[1.8,2.3,2.8,1.8]; // dopo il massimo, torna al livello base e ricomincia
+    zoomInterval=setInterval(async()=>{
+      try{
+        const track=videoEl.srcObject&&videoEl.srcObject.getVideoTracks()[0];
+        if(track && track.getCapabilities){
+          const caps=track.getCapabilities();
+          if(caps.zoom){
+            const nuovoZoom=livelliZoom[livelloZoom%livelliZoom.length];
+            const zoomClamped=Math.min(Math.max(nuovoZoom,caps.zoom.min||1),caps.zoom.max||3);
+            await track.applyConstraints({advanced:[{zoom:zoomClamped}]});
+            if(statusEl) statusEl.textContent='Provo zoom '+zoomClamped.toFixed(1)+'x, inquadra il codice';
+            livelloZoom++;
+          }
+        }
+      }catch(zErr){/* zoom non supportato su questo device, non bloccante */}
+    },3000);
 
     try{
       let giaGestito=false;
@@ -1948,6 +1968,7 @@ async function avviaScannerGenerico(onCodiceConfermato){
 
 function fermaScanner(){
   if(autoRefocusInterval){clearInterval(autoRefocusInterval);autoRefocusInterval=null;}
+  if(zoomInterval){clearInterval(zoomInterval);zoomInterval=null;}
   if(zxingReader){
     try{zxingReader.reset();}catch(e){}
     zxingReader=null;
