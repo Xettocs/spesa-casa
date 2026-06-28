@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v222</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v223</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1359,18 +1359,18 @@ async function apriLotto(id){
     <label>Scadenza dopo apertura (opzionale)</label>
     <select id="apri-tiposcad">
       <option value="" ${!item.tiposcad?'selected':''}>— Nessuna regola particolare —</option>
-      <option value="1" ${item.tiposcad==='1'?'selected':''}>1 mese dopo apertura</option>
-      <option value="2" ${item.tiposcad==='2'?'selected':''}>2 mesi dopo apertura</option>
-      <option value="3" ${item.tiposcad==='3'?'selected':''}>3 mesi dopo apertura</option>
-      <option value="4" ${item.tiposcad==='4'?'selected':''}>4 mesi dopo apertura</option>
-      <option value="5" ${item.tiposcad==='5'?'selected':''}>5 mesi dopo apertura</option>
-      <option value="6" ${item.tiposcad==='6'?'selected':''}>6 mesi dopo apertura</option>
-      <option value="7" ${item.tiposcad==='7'?'selected':''}>7 mesi dopo apertura</option>
-      <option value="8" ${item.tiposcad==='8'?'selected':''}>8 mesi dopo apertura</option>
-      <option value="9" ${item.tiposcad==='9'?'selected':''}>9 mesi dopo apertura</option>
-      <option value="10" ${item.tiposcad==='10'?'selected':''}>10 mesi dopo apertura</option>
-      <option value="11" ${item.tiposcad==='11'?'selected':''}>11 mesi dopo apertura</option>
-      <option value="12" ${item.tiposcad==='12'?'selected':''}>12 mesi dopo apertura</option>
+      <option value="1" ${String(item.tiposcad)==='1'?'selected':''}>1 mese dopo apertura</option>
+      <option value="2" ${String(item.tiposcad)==='2'?'selected':''}>2 mesi dopo apertura</option>
+      <option value="3" ${String(item.tiposcad)==='3'?'selected':''}>3 mesi dopo apertura</option>
+      <option value="4" ${String(item.tiposcad)==='4'?'selected':''}>4 mesi dopo apertura</option>
+      <option value="5" ${String(item.tiposcad)==='5'?'selected':''}>5 mesi dopo apertura</option>
+      <option value="6" ${String(item.tiposcad)==='6'?'selected':''}>6 mesi dopo apertura</option>
+      <option value="7" ${String(item.tiposcad)==='7'?'selected':''}>7 mesi dopo apertura</option>
+      <option value="8" ${String(item.tiposcad)==='8'?'selected':''}>8 mesi dopo apertura</option>
+      <option value="9" ${String(item.tiposcad)==='9'?'selected':''}>9 mesi dopo apertura</option>
+      <option value="10" ${String(item.tiposcad)==='10'?'selected':''}>10 mesi dopo apertura</option>
+      <option value="11" ${String(item.tiposcad)==='11'?'selected':''}>11 mesi dopo apertura</option>
+      <option value="12" ${String(item.tiposcad)==='12'?'selected':''}>12 mesi dopo apertura</option>
     </select>
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
@@ -1567,7 +1567,7 @@ function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
     '<select id="disp-tiposcad">'+
       '<option value="" '+(!base.tiposcad?'selected':'')+'>— Nessuna regola particolare —</option>'+
       [1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){
-        return '<option value="'+m+'" '+(base.tiposcad===String(m)?'selected':'')+'>'+m+(m===1?' mese':' mesi')+' dopo apertura</option>';
+        return '<option value="'+m+'" '+(String(base.tiposcad||'')===String(m)?'selected':'')+'>'+m+(m===1?' mese':' mesi')+' dopo apertura</option>';
       }).join('')+
     '</select>'+
     '<div class="edit-btns">'+
@@ -1601,7 +1601,7 @@ async function verificaCodiceManuale(){
     document.getElementById('disp-categoria').value=trovato.cat||'Alimenti';
     document.getElementById('disp-tipo').value=trovato.tipo||'';
     document.getElementById('disp-marca').value=trovato.marca||'';
-    if(trovato.tiposcad) document.getElementById('disp-tiposcad').value=trovato.tiposcad;
+    if(trovato.tiposcad) document.getElementById('disp-tiposcad').value=String(trovato.tiposcad);
     return;
   }
 
@@ -1614,7 +1614,7 @@ async function verificaCodiceManuale(){
       document.getElementById('disp-categoria').value=rStorico.cat||'Alimenti';
       document.getElementById('disp-tipo').value=rStorico.tipo||'';
       document.getElementById('disp-marca').value=rStorico.marca||'';
-      if(rStorico.tiposcad) document.getElementById('disp-tiposcad').value=rStorico.tiposcad;
+      if(rStorico.tiposcad) document.getElementById('disp-tiposcad').value=String(rStorico.tiposcad);
       return;
     }
   }catch(e){/* prosegue con la ricerca online */}
@@ -1715,18 +1715,18 @@ function apriEditDispensaItem(id){
     <label>Scadenza dopo apertura (opzionale)</label>
     <select id="ed-disp-tiposcad">
       <option value="" ${!item.tiposcad?'selected':''}>— Nessuna regola particolare —</option>
-      <option value="1" ${item.tiposcad==='1'?'selected':''}>1 mese dopo apertura</option>
-      <option value="2" ${item.tiposcad==='2'?'selected':''}>2 mesi dopo apertura</option>
-      <option value="3" ${item.tiposcad==='3'?'selected':''}>3 mesi dopo apertura</option>
-      <option value="4" ${item.tiposcad==='4'?'selected':''}>4 mesi dopo apertura</option>
-      <option value="5" ${item.tiposcad==='5'?'selected':''}>5 mesi dopo apertura</option>
-      <option value="6" ${item.tiposcad==='6'?'selected':''}>6 mesi dopo apertura</option>
-      <option value="7" ${item.tiposcad==='7'?'selected':''}>7 mesi dopo apertura</option>
-      <option value="8" ${item.tiposcad==='8'?'selected':''}>8 mesi dopo apertura</option>
-      <option value="9" ${item.tiposcad==='9'?'selected':''}>9 mesi dopo apertura</option>
-      <option value="10" ${item.tiposcad==='10'?'selected':''}>10 mesi dopo apertura</option>
-      <option value="11" ${item.tiposcad==='11'?'selected':''}>11 mesi dopo apertura</option>
-      <option value="12" ${item.tiposcad==='12'?'selected':''}>12 mesi dopo apertura</option>
+      <option value="1" ${String(item.tiposcad)==='1'?'selected':''}>1 mese dopo apertura</option>
+      <option value="2" ${String(item.tiposcad)==='2'?'selected':''}>2 mesi dopo apertura</option>
+      <option value="3" ${String(item.tiposcad)==='3'?'selected':''}>3 mesi dopo apertura</option>
+      <option value="4" ${String(item.tiposcad)==='4'?'selected':''}>4 mesi dopo apertura</option>
+      <option value="5" ${String(item.tiposcad)==='5'?'selected':''}>5 mesi dopo apertura</option>
+      <option value="6" ${String(item.tiposcad)==='6'?'selected':''}>6 mesi dopo apertura</option>
+      <option value="7" ${String(item.tiposcad)==='7'?'selected':''}>7 mesi dopo apertura</option>
+      <option value="8" ${String(item.tiposcad)==='8'?'selected':''}>8 mesi dopo apertura</option>
+      <option value="9" ${String(item.tiposcad)==='9'?'selected':''}>9 mesi dopo apertura</option>
+      <option value="10" ${String(item.tiposcad)==='10'?'selected':''}>10 mesi dopo apertura</option>
+      <option value="11" ${String(item.tiposcad)==='11'?'selected':''}>11 mesi dopo apertura</option>
+      <option value="12" ${String(item.tiposcad)==='12'?'selected':''}>12 mesi dopo apertura</option>
     </select>
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
