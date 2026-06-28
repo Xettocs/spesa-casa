@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v234</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v220</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1617,7 +1617,9 @@ async function verificaCodiceManuale(){
 
   // 3. cerca online: Open Food Facts + Open Beauty Facts + Open Products Facts (chiamata universale)
   try{
-    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json?product_type=all`);
+    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json?product_type=all`,{
+      headers:{'User-Agent':'CasaSpese/1.0 (app personale Antonio e Concetta)'}
+    });
     const data=await r.json();
     if(data.status===1&&data.product){
       const nomeCompleto=data.product.product_name||data.product.product_name_it||'';
@@ -2018,7 +2020,9 @@ async function gestisciCodiceScansionato(codice){
   }catch(e){/* prosegue con la ricerca online */}
   // 3. cerca online: Open Food Facts + Open Beauty Facts + Open Products Facts (chiamata universale)
   try{
-    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json?product_type=all`);
+    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${codice}.json?product_type=all`,{
+      headers:{'User-Agent':'CasaSpese/1.0 (app personale Antonio e Concetta)'}
+    });
     const data=await r.json();
     if(data.status===1&&data.product){
       const nomeCompleto=data.product.product_name||data.product.product_name_it||'';
