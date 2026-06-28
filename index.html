@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v229</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v230</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -560,6 +560,9 @@ function parseSpese(rows){
     imp:parseImporto(row[4]),data:row[5],pag:row[6],note:row[7]||'',
     segnalazione:row[8]||'',statoSeg:row[9]||''
   }));
+}
+function nomeProdotto(item){
+  return [item.marca,item.tipo].filter(Boolean).join(' ')||item.tipo||'';
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
@@ -1200,9 +1203,9 @@ async function ricaricaDispensa(){
   try{
     const data=await api({action:'read',foglio:'Dispensa'});
     dispensaItems=(data.dati||[]).slice(1).filter(r=>r[0]).map(r=>({
-      id:String(r[0]),codice:r[1]||'',nome:r[2],cat:r[3]||'',stato:r[4]||'chiuso',
-      scadenza:r[5]||'',tiposcad:r[6]||'',dataapertura:r[7]||'',persona:r[8]||'',
-      tipo:r[9]||'',marca:r[10]||''
+      id:String(r[0]),codice:r[1]||'',cat:r[2]||'',stato:r[3]||'chiuso',
+      scadenza:r[4]||'',tiposcad:r[5]||'',dataapertura:r[6]||'',persona:r[7]||'',
+      tipo:r[8]||'',marca:r[9]||''
     }));
   }catch(e){toast('❌ Errore caricamento dispensa');}
   renderDispensa();
@@ -1288,7 +1291,7 @@ function renderDispensa(){
       return `<div class="pantry-card ${cls}">
         <div class="pantry-top">
           <div>
-            <div class="pantry-name ${textCls}">${esc(i.nome)}</div>
+            <div class="pantry-name ${textCls}">${esc(nomeProdotto(i))}</div>
             <div class="pantry-sub">${scad?'Scade: '+formatDataIt(scad):'Nessuna scadenza'}${etichettaScadenza(scad)}${i.dataapertura?' · Aperto il '+formatDataIt(i.dataapertura):''}</div>
           </div>
         </div>
@@ -1301,11 +1304,12 @@ function renderDispensa(){
     return;
   }
 
-  // vista "In Dispensa": raggruppa per nome
+  // vista "In Dispensa": raggruppa per nome calcolato (Marca+Prodotto)
   const gruppi={};
   filtered.forEach(i=>{
-    if(!gruppi[i.nome]) gruppi[i.nome]=[];
-    gruppi[i.nome].push(i);
+    const key=nomeProdotto(i);
+    if(!gruppi[key]) gruppi[key]=[];
+    gruppi[key].push(i);
   });
   el.innerHTML=Object.keys(gruppi).map(nome=>{
     const lotti=gruppi[nome].sort((a,b)=>(a.scadenza||'9999').localeCompare(b.scadenza||'9999'));
@@ -1353,13 +1357,14 @@ function toggleGruppo(id){
 async function apriLotto(id){
   const item=dispensaItems.find(i=>i.id===id);
   if(!item) return;
-  // determina se è l'ultimo lotto chiuso di questo nome
-  const stessiNome=dispensaItems.filter(i=>i.nome===item.nome&&i.stato==='chiuso');
+  const nomeAttuale=nomeProdotto(item);
+  // determina se è l'ultimo lotto chiuso di questo prodotto (stesso nome calcolato)
+  const stessiNome=dispensaItems.filter(i=>nomeProdotto(i)===nomeAttuale&&i.stato==='chiuso');
   const eraUltimo=stessiNome.length===1;
 
   apriEdit(`
     <h3><i class="ti ti-package"></i> Apri prodotto</h3>
-    <p style="font-size:13px;color:#888780;margin-bottom:10px">${esc(item.nome)}${item.scadenza?' · Scad. '+formatDataIt(item.scadenza):''}</p>
+    <p style="font-size:13px;color:#888780;margin-bottom:10px">${esc(nomeAttuale)}${item.scadenza?' · Scad. '+formatDataIt(item.scadenza):''}</p>
     <label>Data apertura</label>
     <input type="date" id="apri-data" value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}">
     <p style="font-size:11px;color:#888780;margin-top:2px">Lascia oggi se lo stai aprendo ora, oppure indica la data reale se l'hai già aperto in precedenza</p>
@@ -1392,15 +1397,16 @@ async function confermaApriLotto(id,eraUltimo){
   const tiposcad=document.getElementById('apri-tiposcad').value;
   const dataApertura=document.getElementById('apri-data').value||new Date().toISOString().split('T')[0];
   chiudiEdit();
+  const nomeAttuale=nomeProdotto(item);
   try{
-    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome:item.nome,cat:item.cat,stato:'uso',scadenza:item.scadenza,tiposcad,dataapertura:dataApertura,persona:currentUser,tipo:item.tipo,marca:item.marca});
+    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,cat:item.cat,stato:'uso',scadenza:item.scadenza,tiposcad,dataapertura:dataApertura,persona:currentUser,tipo:item.tipo,marca:item.marca});
     if(res.errore) throw new Error();
     item.stato='uso';item.tiposcad=tiposcad;item.dataapertura=dataApertura;
     renderDispensa();aggiornaBadgeDispensa();
     toast('✓ Prodotto aperto, spostato in "In Uso"');
     if(eraUltimo){
-      const ok=await conferma(`Hai aperto l'ultimo "${item.nome}". Aggiungerlo alla lista della spesa?`,'Sì, aggiungi',true);
-      if(ok) await aggiungiAllaListaDaDispensa(item.nome);
+      const ok=await conferma(`Hai aperto l'ultimo "${nomeAttuale}". Aggiungerlo alla lista della spesa?`,'Sì, aggiungi',true);
+      if(ok) await aggiungiAllaListaDaDispensa(nomeAttuale);
     }
   }catch(e){toast('❌ Errore');}
 }
@@ -1408,7 +1414,8 @@ async function confermaApriLotto(id,eraUltimo){
 async function eliminaLotto(id){
   const item=dispensaItems.find(i=>i.id===id);
   if(!item) return;
-  const ok=await conferma(`Eliminare "${item.nome}" dalla dispensa?`,'Elimina',false);
+  const nomeAttuale=nomeProdotto(item);
+  const ok=await conferma(`Eliminare "${nomeAttuale}" dalla dispensa?`,'Elimina',false);
   if(!ok) return;
   dispensaItems=dispensaItems.filter(i=>i.id!==id);
   chiudiEdit();
@@ -1422,7 +1429,8 @@ async function eliminaLotto(id){
 async function segnaTerminato(id){
   const item=dispensaItems.find(i=>i.id===id);
   if(!item) return;
-  const ok=await conferma(`"${item.nome}" è terminato?`,'Sì, terminato',true);
+  const nomeAttuale=nomeProdotto(item);
+  const ok=await conferma(`"${nomeAttuale}" è terminato?`,'Sì, terminato',true);
   if(!ok) return;
   dispensaItems=dispensaItems.filter(i=>i.id!==id);
   chiudiEdit();
@@ -1430,15 +1438,15 @@ async function segnaTerminato(id){
   try{
     await api({action:'delete',foglio:'Dispensa',id,motivo:'terminato',persona:currentUser});
     // calcola le quantità residue dello stesso prodotto, dopo la rimozione di quello appena terminato
-    const residuiChiusi=dispensaItems.filter(x=>x.nome===item.nome&&x.stato==='chiuso').length;
-    const residuiUso=dispensaItems.filter(x=>x.nome===item.nome&&x.stato==='uso').length;
+    const residuiChiusi=dispensaItems.filter(x=>nomeProdotto(x)===nomeAttuale&&x.stato==='chiuso').length;
+    const residuiUso=dispensaItems.filter(x=>nomeProdotto(x)===nomeAttuale&&x.stato==='uso').length;
     const riepilogoQuantita=`Quantità residua: ${residuiChiusi} in Dispensa, ${residuiUso} in Uso.`;
     // verifica se già presente in lista della spesa
     await ricaricaSpesaSilenzioso();
-    const giaPresente=listaSpesa.some(x=>!x.done&&x.text.toLowerCase().includes(item.nome.toLowerCase()));
+    const giaPresente=listaSpesa.some(x=>!x.done&&x.text.toLowerCase().includes(nomeAttuale.toLowerCase()));
     if(!giaPresente){
-      const ok2=await conferma(`"${item.nome}" è terminato. ${riepilogoQuantita} Aggiungerlo alla lista della spesa?`,'Sì, aggiungi',true);
-      if(ok2) await aggiungiAllaListaDaDispensa(item.nome);
+      const ok2=await conferma(`"${nomeAttuale}" è terminato. ${riepilogoQuantita} Aggiungerlo alla lista della spesa?`,'Sì, aggiungi',true);
+      if(ok2) await aggiungiAllaListaDaDispensa(nomeAttuale);
     } else {
       toast(`✓ Terminato — ${riepilogoQuantita} (già in lista spesa)`);
     }
@@ -1528,7 +1536,7 @@ function eseguiRicercaProdotto(){
         return '<div class="pantry-card '+cardCls+'" style="margin-bottom:6px">'+
           '<div class="pantry-top">'+
             '<div style="flex:1">'+
-              '<div class="pantry-name '+textCls+'">'+esc(i.nome)+'</div>'+
+              '<div class="pantry-name '+textCls+'">'+esc(nomeProdotto(i))+'</div>'+
               '<div class="pantry-sub">'+(scadEffettiva?'Scad. '+formatDataIt(scadEffettiva):'Nessuna scadenza')+etichettaScadenza(scadEffettiva)+(i.dataapertura?' · Aperto il '+formatDataIt(i.dataapertura):'')+'</div>'+
             '</div>'+
           '</div>'+
@@ -1558,7 +1566,7 @@ function eseguiRicercaProdotto(){
       '<div class="pantry-card '+cardCls+'">'+
         '<div class="pantry-top">'+
           '<div style="flex:1">'+
-            '<div class="pantry-name '+textCls+'">'+esc(principale.nome)+'</div>'+
+            '<div class="pantry-name '+textCls+'">'+esc(nomeProdotto(principale))+'</div>'+
             '<div class="pantry-sub">'+(scad?'Scadenza più vicina: '+formatDataIt(scad):'Nessuna scadenza')+etichettaScadenza(scad)+etichettaScadenzaFissa(principale.tiposcad)+' · Quantità: '+lista.length+'</div>'+
           '</div>'+
           renderContatoreAggiunta(codiceRic,principale)+
@@ -1777,14 +1785,11 @@ async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
     if(quantita<1) quantita=1;
   }
 
-  // Costruisce il nome visualizzato combinando i campi compilati
-  const nome=[marca,tipo].filter(Boolean).join(' ')||tipo;
-
   const id=String(Date.now())+'_'+paccoAttuale;
   try{
-    const res=await api({action:'add',foglio:'Dispensa',id,codice,nome,cat:categoria,tipo,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
+    const res=await api({action:'add',foglio:'Dispensa',id,codice,cat:categoria,tipo,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
     if(res.errore) throw new Error(res.errore);
-    dispensaItems.push({id,codice,nome,cat:categoria,tipo,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
+    dispensaItems.push({id,codice,cat:categoria,tipo,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
     if(codice&&paccoAttuale===1){
       api({action:'salvaAnagrafica',codice,cat:categoria,tipo,marca,tiposcad}).catch(()=>{});
     }
@@ -1807,9 +1812,9 @@ function apriEditDispensaItem(id){
   const item=dispensaItems.find(i=>i.id===id);
   if(!item) return;
   const isUso=item.stato==='uso';
-  const haCodice=!!item.codice;
   apriEdit(`
     <h3><i class="ti ti-pencil"></i> Modifica prodotto</h3>
+    ${item.codice?'<p style="font-size:11px;color:#888780;margin-bottom:8px">Le modifiche a Categoria/Prodotto/Marca/Scadenza fissa verranno applicate a tutti i prodotti con questo codice a barre (In Dispensa, In Uso e nel database personale)</p>':''}
     <label>Categoria</label>
     <select id="ed-disp-categoria">
       <option value="Alimenti" ${item.cat==='Alimenti'?'selected':''}>🍽️ Alimenti</option>
@@ -1845,14 +1850,6 @@ function apriEditDispensaItem(id){
       <option value="11" ${String(item.tiposcad)==='11'?'selected':''}>11 mesi dopo apertura</option>
       <option value="12" ${String(item.tiposcad)==='12'?'selected':''}>12 mesi dopo apertura</option>
     </select>
-    ${haCodice?`
-    <div style="margin-top:12px;padding:10px;background:#f5f4f0;border-radius:8px">
-      <label style="display:flex;align-items:flex-start;gap:8px;margin-top:0;cursor:pointer">
-        <input type="checkbox" id="ed-disp-applica-tutti" style="width:auto;margin-top:2px">
-        <span style="font-size:12px;color:#1a1a18">Applica Categoria/Prodotto/Marca/Scadenza fissa a <strong>tutti</strong> i prodotti con questo codice a barre (In Dispensa, In Uso e nel database personale) — utile per correggere errori di battitura</span>
-      </label>
-    </div>
-    `:''}
     <div class="edit-btns">
       <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
       <button type="button" class="edit-save" onclick="salvaEditDispensaItem('${id}')">Salva modifiche</button>
@@ -1869,30 +1866,27 @@ async function salvaEditDispensaItem(id){
   const scadenza=document.getElementById('ed-disp-scadenza').value;
   const tiposcad=document.getElementById('ed-disp-tiposcad').value;
   const dataapertura=item.stato==='uso'?(document.getElementById('ed-disp-dataapertura').value||item.dataapertura):item.dataapertura;
-  const checkboxTutti=document.getElementById('ed-disp-applica-tutti');
-  const applicaATutti=checkboxTutti&&checkboxTutti.checked;
   if(!tipo){toast('⚠️ Inserisci almeno il Prodotto');return;}
-  const messaggioConferma=applicaATutti
-    ?`Confermi le modifiche? Categoria/Prodotto/Marca/Scadenza fissa verranno applicate a TUTTI i prodotti con questo codice a barre.`
+  const messaggioConferma=item.codice
+    ?'Confermi le modifiche? Verranno applicate a tutti i prodotti con questo codice a barre.'
     :'Confermi le modifiche a questo prodotto?';
   const ok=await conferma(messaggioConferma,'Salva',true);
   if(!ok) return;
   chiudiEdit();
-  const nome=[marca,tipo].filter(Boolean).join(' ')||tipo;
 
-  if(applicaATutti&&item.codice){
+  if(item.codice){
     try{
       const res=await api({action:'aggiornaTuttiPerCodice',codice:item.codice,cat,tipo,marca,tiposcad});
       if(res.errore) throw new Error(res.errore);
-      // aggiorna anche i dati locali per tutti i lotti con lo stesso codice
+      // aggiorna i dati locali per tutti i lotti con lo stesso codice
       dispensaItems.forEach(x=>{
         if(x.codice===item.codice){
-          x.cat=cat;x.tipo=tipo;x.marca=marca;x.nome=nome;x.tiposcad=tiposcad;
+          x.cat=cat;x.tipo=tipo;x.marca=marca;x.tiposcad=tiposcad;
         }
       });
       // la scadenza specifica e la data apertura restano individuali per il lotto modificato
       item.scadenza=scadenza;item.dataapertura=dataapertura;
-      try{await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome,cat,stato:item.stato,scadenza,tiposcad,dataapertura,persona:currentUser,tipo,marca});}catch(e2){}
+      await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,cat,stato:item.stato,scadenza,tiposcad,dataapertura,persona:currentUser,tipo,marca});
       renderDispensa();aggiornaBadgeDispensa();
       toast(`✓ Aggiornati ${res.righeAggiornate||0} prodotti con questo codice`);
     }catch(e){toast('❌ Errore modifica: '+(e.message||'sconosciuto'));}
@@ -1900,9 +1894,9 @@ async function salvaEditDispensaItem(id){
   }
 
   try{
-    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,nome,cat,stato:item.stato,scadenza,tiposcad,dataapertura,persona:currentUser,tipo,marca});
+    const res=await api({action:'update',foglio:'Dispensa',id,campo:'full',codice:item.codice,cat,stato:item.stato,scadenza,tiposcad,dataapertura,persona:currentUser,tipo,marca});
     if(res.errore) throw new Error();
-    item.cat=cat;item.tipo=tipo;item.marca=marca;item.nome=nome;
+    item.cat=cat;item.tipo=tipo;item.marca=marca;
     item.scadenza=scadenza;item.tiposcad=tiposcad;item.dataapertura=dataapertura;
     renderDispensa();aggiornaBadgeDispensa();
     toast('✓ Prodotto modificato');
