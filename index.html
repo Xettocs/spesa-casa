@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v230</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v231</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1814,7 +1814,7 @@ function apriEditDispensaItem(id){
   const isUso=item.stato==='uso';
   apriEdit(`
     <h3><i class="ti ti-pencil"></i> Modifica prodotto</h3>
-    ${item.codice?'<p style="font-size:11px;color:#888780;margin-bottom:8px">Le modifiche a Categoria/Prodotto/Marca/Scadenza fissa verranno applicate a tutti i prodotti con questo codice a barre (In Dispensa, In Uso e nel database personale)</p>':''}
+    ${item.codice?'<p style="font-size:11px;color:#888780;margin-bottom:8px">Le modifiche a Categoria/Prodotto/Marca/Scadenza fissa verranno applicate a tutti i prodotti con questo codice a barre (In Dispensa, In Uso e nel database personale). La <strong>scadenza della confezione</strong> qui sotto resta invece specifica solo per questo lotto.</p>':''}
     <label>Categoria</label>
     <select id="ed-disp-categoria">
       <option value="Alimenti" ${item.cat==='Alimenti'?'selected':''}>🍽️ Alimenti</option>
@@ -1868,7 +1868,7 @@ async function salvaEditDispensaItem(id){
   const dataapertura=item.stato==='uso'?(document.getElementById('ed-disp-dataapertura').value||item.dataapertura):item.dataapertura;
   if(!tipo){toast('⚠️ Inserisci almeno il Prodotto');return;}
   const messaggioConferma=item.codice
-    ?'Confermi le modifiche? Verranno applicate a tutti i prodotti con questo codice a barre.'
+    ?'Confermi le modifiche? Categoria/Prodotto/Marca/Scadenza fissa verranno applicate a tutti i prodotti con questo codice. La scadenza di questa confezione resta invece solo per questo lotto.'
     :'Confermi le modifiche a questo prodotto?';
   const ok=await conferma(messaggioConferma,'Salva',true);
   if(!ok) return;
