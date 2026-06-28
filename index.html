@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v220</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v221</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -430,6 +430,7 @@ select:focus,input:focus{border-color:#534AB7}
       <option value="Alimenti">🍽️ Alimenti</option>
       <option value="Cosmetici">🧴 Cosmetici</option>
       <option value="Prodotti per la casa">🏠 Prodotti per la casa</option>
+      <option value="Igiene personale">🧼 Igiene personale</option>
       <option value="Farmaceutici">💊 Farmaceutici</option>
       <option value="Altro">📦 Altro</option>
     </select>
@@ -1551,6 +1552,7 @@ function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
       '<option value="Alimenti" '+(base.categoria==='Alimenti'||!base.categoria?'selected':'')+'>🍽️ Alimenti</option>'+
       '<option value="Cosmetici" '+(base.categoria==='Cosmetici'?'selected':'')+'>🧴 Cosmetici</option>'+
       '<option value="Prodotti per la casa" '+(base.categoria==='Prodotti per la casa'?'selected':'')+'>🏠 Prodotti per la casa</option>'+
+      '<option value="Igiene personale" '+(base.categoria==='Igiene personale'?'selected':'')+'>🧼 Igiene personale</option>'+
       '<option value="Farmaceutici" '+(base.categoria==='Farmaceutici'?'selected':'')+'>💊 Farmaceutici</option>'+
       '<option value="Altro" '+(base.categoria==='Altro'?'selected':'')+'>📦 Altro</option>'+
     '</select>'+
@@ -1694,6 +1696,7 @@ function apriEditDispensaItem(id){
       <option value="Alimenti" ${item.cat==='Alimenti'?'selected':''}>🍽️ Alimenti</option>
       <option value="Cosmetici" ${item.cat==='Cosmetici'?'selected':''}>🧴 Cosmetici</option>
       <option value="Prodotti per la casa" ${item.cat==='Prodotti per la casa'?'selected':''}>🏠 Prodotti per la casa</option>
+      <option value="Igiene personale" ${item.cat==='Igiene personale'?'selected':''}>🧼 Igiene personale</option>
       <option value="Farmaceutici" ${item.cat==='Farmaceutici'?'selected':''}>💊 Farmaceutici</option>
       <option value="Altro" ${item.cat==='Altro'?'selected':''}>📦 Altro</option>
     </select>
