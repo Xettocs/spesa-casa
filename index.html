@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v221</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v222</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -1601,6 +1601,7 @@ async function verificaCodiceManuale(){
     document.getElementById('disp-categoria').value=trovato.cat||'Alimenti';
     document.getElementById('disp-tipo').value=trovato.tipo||'';
     document.getElementById('disp-marca').value=trovato.marca||'';
+    if(trovato.tiposcad) document.getElementById('disp-tiposcad').value=trovato.tiposcad;
     return;
   }
 
@@ -1613,6 +1614,7 @@ async function verificaCodiceManuale(){
       document.getElementById('disp-categoria').value=rStorico.cat||'Alimenti';
       document.getElementById('disp-tipo').value=rStorico.tipo||'';
       document.getElementById('disp-marca').value=rStorico.marca||'';
+      if(rStorico.tiposcad) document.getElementById('disp-tiposcad').value=rStorico.tiposcad;
       return;
     }
   }catch(e){/* prosegue con la ricerca online */}
@@ -1668,7 +1670,7 @@ async function salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente){
     if(res.errore) throw new Error(res.errore);
     dispensaItems.push({id,codice,nome,cat:categoria,tipo,marca,stato:'chiuso',scadenza,tiposcad,dataapertura:'',persona:currentUser});
     if(codice&&paccoAttuale===1){
-      api({action:'salvaAnagrafica',codice,cat:categoria,tipo,marca}).catch(()=>{});
+      api({action:'salvaAnagrafica',codice,cat:categoria,tipo,marca,tiposcad}).catch(()=>{});
     }
   }catch(e){
     toast('❌ Errore salvataggio: '+(e.message||'sconosciuto'));
@@ -2009,7 +2011,7 @@ async function gestisciCodiceScansionato(codice){
   // 1. cerca nel foglio Dispensa (prodotto attualmente presente)
   const trovato=dispensaItems.find(i=>i.codice===codice);
   if(trovato){
-    mostraFormProdotto({categoria:trovato.cat,tipo:trovato.tipo,marca:trovato.marca},1,1,codice);
+    mostraFormProdotto({categoria:trovato.cat,tipo:trovato.tipo,marca:trovato.marca,tiposcad:trovato.tiposcad},1,1,codice);
     return;
   }
   // 2. cerca nello storico (anagrafica permanente)
@@ -2017,7 +2019,7 @@ async function gestisciCodiceScansionato(codice){
   try{
     const rStorico=await api({action:'cercaCodice',codice});
     if(rStorico.trovato){
-      mostraFormProdotto({categoria:rStorico.cat,tipo:rStorico.tipo,marca:rStorico.marca},1,1,codice);
+      mostraFormProdotto({categoria:rStorico.cat,tipo:rStorico.tipo,marca:rStorico.marca,tiposcad:rStorico.tiposcad},1,1,codice);
       return;
     }
   }catch(e){/* prosegue con la ricerca online */}
