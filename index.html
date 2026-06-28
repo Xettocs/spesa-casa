@@ -176,7 +176,7 @@ select:focus,input:focus{border-color:#534AB7}
 
 <div class="header">
   <h1>👩🏻‍❤️‍👨🏻 Casa Spese</h1>
-  <p>Antonio &amp; Concetta <span style="opacity:.4">· build 2026-06-28-7</span></p>
+  <p>Antonio &amp; Concetta <span style="opacity:.4">· build 2026-06-28-8</span></p>
 </div>
 
 <div class="tabs">
@@ -1453,10 +1453,15 @@ function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
   apriEdit(html);
   // collega l'evento click via JS puro, evitando problemi di escaping nell'attributo onclick
   const btn=document.getElementById('btn-salva-prodotto');
+  const dbgEl=document.getElementById('debug-log');
+  if(dbgEl) dbgEl.textContent='Setup bottone: trovato='+(!!btn)+' | pacco='+paccoAttuale+'/'+paccoTotale;
   if(btn){
     btn.addEventListener('click',function(){
+      if(dbgEl) dbgEl.textContent+='\n>>> CLICK RILEVATO <<<';
       salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente);
     });
+  } else {
+    if(dbgEl) dbgEl.textContent+='\nERRORE: bottone btn-salva-prodotto non trovato nel DOM!';
   }
 }
 
