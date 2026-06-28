@@ -146,7 +146,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v235</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v236</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -411,6 +411,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="card-title" style="justify-content:space-between">
       <span><i class="ti ti-fridge"></i> Dispensa</span>
       <div style="display:flex;gap:6px">
+        <button class="btn btn-outline" style="width:auto;margin-top:0;padding:6px 10px;font-size:11px" onclick="apriReportSpreco()"><i class="ti ti-chart-pie"></i></button>
         <button class="btn btn-outline" style="width:auto;margin-top:0;padding:6px 10px;font-size:11px" onclick="apriImpostazioniDispensa()"><i class="ti ti-settings"></i></button>
         <button class="btn btn-outline" style="width:auto;margin-top:0;padding:6px 10px;font-size:11px" onclick="ricaricaDispensa()"><i class="ti ti-refresh"></i></button>
       </div>
@@ -1945,6 +1946,75 @@ function salvaImpostazioniDispensa(){
   chiudiEdit();
   renderDispensa();aggiornaBadgeDispensa();
   toast('✓ Impostazioni salvate');
+}
+
+// ---- REPORT SPRECO (terminati vs eliminati) ----
+let chartSpreco=null;
+
+function apriReportSpreco(){
+  const html=
+    '<h3><i class="ti ti-chart-pie"></i> Report consumi</h3>'+
+    '<p style="font-size:12px;color:#888780;margin-bottom:10px">Confronto tra prodotti effettivamente usati (terminati) e prodotti buttati senza essere consumati (eliminati)</p>'+
+    '<label>Filtra per categoria</label>'+
+    '<select id="report-cat-filter">'+
+      '<option value="">— Tutte le categorie —</option>'+
+      '<option value="Alimenti">🍽️ Alimenti</option>'+
+      '<option value="Cosmetici">🧴 Cosmetici</option>'+
+      '<option value="Prodotti per la casa">🏠 Prodotti per la casa</option>'+
+      '<option value="Igiene personale">🧼 Igiene personale</option>'+
+      '<option value="Farmaceutici">💊 Farmaceutici</option>'+
+      '<option value="Altro">📦 Altro</option>'+
+    '</select>'+
+    '<div id="report-spreco-stats" style="margin-top:14px"></div>'+
+    '<div class="chart-wrap" style="height:220px;margin-top:8px"><canvas id="chartSpreco"></canvas></div>'+
+    '<div class="edit-btns"><button type="button" class="edit-cancel" onclick="chiudiReportSpreco()">Chiudi</button></div>';
+  apriEdit(html);
+  document.getElementById('report-cat-filter').addEventListener('change',renderReportSpreco);
+  renderReportSpreco();
+}
+
+function chiudiReportSpreco(){
+  if(chartSpreco){chartSpreco.destroy();chartSpreco=null;}
+  chiudiEdit();
+}
+
+function renderReportSpreco(){
+  const catFiltro=document.getElementById('report-cat-filter').value;
+  let datiFiltrati=dispensaItems.filter(i=>i.stato==='terminato'||i.stato==='eliminato');
+  if(catFiltro) datiFiltrati=datiFiltrati.filter(i=>i.cat===catFiltro);
+
+  const terminati=datiFiltrati.filter(i=>i.stato==='terminato').length;
+  const eliminati=datiFiltrati.filter(i=>i.stato==='eliminato').length;
+  const totale=terminati+eliminati;
+  const percSpreco=totale>0?Math.round((eliminati/totale)*100):0;
+
+  const statsEl=document.getElementById('report-spreco-stats');
+  if(totale===0){
+    statsEl.innerHTML='<div class="empty">Nessun dato disponibile per questa categoria</div>';
+  }else{
+    statsEl.innerHTML=
+      '<div class="stat-grid">'+
+        '<div class="stat"><div class="stat-label">✓ Terminati (usati)</div><div class="stat-val" style="color:#1D9E75">'+terminati+'</div></div>'+
+        '<div class="stat"><div class="stat-label">🗑️ Eliminati (sprecati)</div><div class="stat-val" style="color:#C0392B">'+eliminati+'</div></div>'+
+      '</div>'+
+      '<p style="font-size:13px;text-align:center;margin-top:8px;'+(percSpreco>30?'color:#C0392B;font-weight:600':'color:#888780')+'">'+
+        (percSpreco>0?'Tasso di spreco: '+percSpreco+'%':'Nessuno spreco registrato! 🎉')+
+      '</p>';
+  }
+
+  if(chartSpreco){chartSpreco.destroy();chartSpreco=null;}
+  if(totale===0) return;
+  chartSpreco=new Chart(document.getElementById('chartSpreco'),{
+    type:'doughnut',
+    data:{
+      labels:['Terminati (usati)','Eliminati (sprecati)'],
+      datasets:[{data:[terminati,eliminati],backgroundColor:['#1D9E75','#C0392B'],borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed+' ('+((ctx.parsed/totale)*100).toFixed(1)+'%)'}}}
+    }
+  });
 }
 
 // ---- SCANNER CODICE A BARRE (ZXing) ----
