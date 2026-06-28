@@ -176,7 +176,7 @@ select:focus,input:focus{border-color:#534AB7}
 
 <div class="header">
   <h1>👩🏻‍❤️‍👨🏻 Casa Spese</h1>
-  <p>Antonio &amp; Concetta <span style="opacity:.4">· build 2026-06-28-8</span></p>
+  <p>Antonio &amp; Concetta <span style="opacity:.4">· build 2026-06-28-9</span></p>
 </div>
 
 <div class="tabs">
@@ -1434,7 +1434,7 @@ function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
     '<label>Prodotto</label>'+
     '<input type="text" id="disp-tipo" placeholder="es. Pasta, Dentifricio, Acqua..." value="'+esc(base.tipo||'')+'">'+
     '<label>Marca</label>'+
-    '<input type="text" id="disp-marca" placeholder="es. Barilla, Oral B, Sant\'Anna..." value="'+esc(base.marca||'')+'">'+
+    '<input type="text" id="disp-marca" placeholder="es. Barilla, Oral B, SantAnna..." value="'+esc(base.marca||'')+'">'+
     (paccoAttuale===1?('<label>Quantità (numero confezioni)</label><input type="number" id="disp-quantita" min="1" value="'+(base.quantita||1)+'">'):'')+
     '<label>Scadenza confezione '+paccoAttuale+(paccoTotale>1?(' di '+paccoTotale):'')+' (opzionale)</label>'+
     '<input type="date" id="disp-scadenza" value="'+(base.scadenza||'')+'">'+
