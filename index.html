@@ -19,11 +19,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .header{background:#fff;border-bottom:0.5px solid #d3d1c7;padding:14px 16px;text-align:center}
 .header h1{font-size:17px;font-weight:500}
 .header p{font-size:12px;color:#888780;margin-top:2px}
-.tabs{display:flex;background:#fff;border-bottom:0.5px solid #d3d1c7;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex:0 0 auto;padding:10px 12px;text-align:center;font-size:11px;font-weight:500;cursor:pointer;color:#888780;border-bottom:2px solid transparent;white-space:nowrap;position:relative}
-.tab-badge{position:absolute;top:2px;right:2px;background:#C0392B;color:#fff;font-size:9px;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;font-weight:600}
-.tab.active{color:#534AB7;border-bottom-color:#534AB7}
+.tabs-select-wrap{display:flex;align-items:center;gap:8px;background:#fff;border-bottom:0.5px solid #d3d1c7;padding:10px 14px}
+.tabs-select-wrap select{flex:1;padding:10px 12px;border:0.5px solid #d3d1c7;border-radius:8px;font-size:14px;font-weight:500;color:#1a1a18;background:#fff;outline:none;max-width:480px;margin:0 auto}
+.tab-badge{position:relative;top:0;right:0;background:#C0392B;color:#fff;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;font-weight:600;flex-shrink:0}
 .content{padding:14px;max-width:480px;margin:0 auto}
 .section{display:none}.section.active{display:block}
 .card{background:#fff;border-radius:12px;border:0.5px solid #d3d1c7;padding:14px;margin-bottom:12px}
@@ -146,7 +144,7 @@ select:focus,input:focus{border-color:#534AB7}
     <div class="login-logo">👩🏻‍❤️‍👨🏻</div>
     <div class="login-title">Casa Spese</div>
     <div class="login-sub">Antonio &amp; Concetta</div>
-    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v240</div>
+    <div style="text-align:center;font-size:11px;color:#b4b2a9;margin-top:-14px;margin-bottom:14px">v241</div>
     <label style="text-align:left">Chi sei?</label>
     <div class="person-toggle">
       <div class="ptab active" id="login-antonio" onclick="selectLoginPerson('Antonio')">Antonio</div>
@@ -180,14 +178,17 @@ select:focus,input:focus{border-color:#534AB7}
   <p>Antonio &amp; Concetta</p>
 </div>
 
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('aggiungi')"><i class="ti ti-plus"></i> Aggiungi</div>
-  <div class="tab" onclick="switchTab('lista')"><i class="ti ti-list"></i> Lista</div>
-  <div class="tab" onclick="switchTab('grafici')"><i class="ti ti-chart-pie"></i> Grafici</div>
-  <div class="tab" onclick="switchTab('riepilogo')"><i class="ti ti-calculator"></i> Riepilogo</div>
-  <div class="tab" onclick="switchTab('spesa')"><i class="ti ti-shopping-cart"></i> Spesa</div>
-  <div class="tab" onclick="switchTab('todo')"><i class="ti ti-checkbox"></i> Da fare</div>
-  <div class="tab" id="tab-dispensa" onclick="switchTab('dispensa')"><i class="ti ti-fridge"></i> Dispensa<span class="tab-badge" id="dispensa-badge" style="display:none">0</span></div>
+<div class="tabs-select-wrap">
+  <select id="tab-select" onchange="switchTab(this.value)">
+    <option value="aggiungi">➕ Aggiungi</option>
+    <option value="lista">📋 Lista</option>
+    <option value="grafici">📊 Grafici</option>
+    <option value="riepilogo">🧮 Riepilogo</option>
+    <option value="spesa">🛒 Spesa</option>
+    <option value="todo">✅ Da fare</option>
+    <option value="dispensa">🧊 Dispensa</option>
+  </select>
+  <span class="tab-badge" id="dispensa-badge" style="display:none">0</span>
 </div>
 
 <div class="content">
@@ -596,8 +597,8 @@ function popolaAnni(){
 
 // ---- TABS ----
 function switchTab(name){
-  const names=['aggiungi','lista','grafici','riepilogo','spesa','todo','dispensa'];
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
+  const selectEl=document.getElementById('tab-select');
+  if(selectEl && selectEl.value!==name) selectEl.value=name;
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
   if(name==='lista') renderLista();
