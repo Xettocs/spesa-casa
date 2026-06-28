@@ -176,7 +176,7 @@ select:focus,input:focus{border-color:#534AB7}
 
 <div class="header">
   <h1>👩🏻‍❤️‍👨🏻 Casa Spese</h1>
-  <p>Antonio &amp; Concetta <span style="opacity:.4">· build 2026-06-28-6</span></p>
+  <p>Antonio &amp; Concetta <span style="opacity:.4">· build 2026-06-28-7</span></p>
 </div>
 
 <div class="tabs">
@@ -1416,51 +1416,48 @@ function apriAggiungiManualeDispensa(){
 }
 
 function mostraFormProdotto(base,paccoAttuale,paccoTotale,codiceEsistente){
-  apriEdit(`
-    <h3><i class="ti ti-plus"></i> Aggiungi prodotto ${paccoTotale>1?`(confezione ${paccoAttuale} di ${paccoTotale})`:''}</h3>
-    <label>Codice a barre (opzionale)</label>
-    <input type="text" id="disp-codice" placeholder="es. 8001090341688" inputmode="numeric" value="${esc(codiceEsistente||'')}" ${paccoAttuale>1?'readonly':'onblur="verificaCodiceManuale()"'}>
-    <p style="font-size:11px;color:#888780;margin-top:2px" id="disp-codice-status">${codiceEsistente?'Verifica che il numero corrisponda al codice sulla confezione':''}</p>
-    <label>Categoria</label>
-    <select id="disp-categoria" onchange="aggiornaCampiProdotto()">
-      <option value="Alimenti" ${base.categoria==='Alimenti'||!base.categoria?'selected':''}>🍽️ Alimenti</option>
-      <option value="Cosmetici" ${base.categoria==='Cosmetici'?'selected':''}>🧴 Cosmetici</option>
-      <option value="Prodotti per la casa" ${base.categoria==='Prodotti per la casa'?'selected':''}>🏠 Prodotti per la casa</option>
-      <option value="Farmaceutici" ${base.categoria==='Farmaceutici'?'selected':''}>💊 Farmaceutici</option>
-      <option value="Altro" ${base.categoria==='Altro'?'selected':''}>📦 Altro</option>
-    </select>
-    <label>Prodotto</label>
-    <input type="text" id="disp-tipo" placeholder="es. Pasta, Dentifricio, Acqua..." value="${esc(base.tipo||'')}">
-    <label>Marca</label>
-    <input type="text" id="disp-marca" placeholder="es. Barilla, Oral B, Sant'Anna..." value="${esc(base.marca||'')}">
-    ${paccoAttuale===1?`
-    <label>Quantità (numero confezioni)</label>
-    <input type="number" id="disp-quantita" min="1" value="${base.quantita||1}">
-    `:''}
-    <label>Scadenza confezione ${paccoAttuale}${paccoTotale>1?` di ${paccoTotale}`:''} (opzionale)</label>
-    <input type="date" id="disp-scadenza" value="${base.scadenza||''}">
-    <label>Scadenza dopo apertura (opzionale)</label>
-    <select id="disp-tiposcad">
-      <option value="" ${!base.tiposcad?'selected':''}>— Nessuna regola particolare —</option>
-      <option value="1" ${base.tiposcad==='1'?'selected':''}>1 mese dopo apertura</option>
-      <option value="2" ${base.tiposcad==='2'?'selected':''}>2 mesi dopo apertura</option>
-      <option value="3" ${base.tiposcad==='3'?'selected':''}>3 mesi dopo apertura</option>
-      <option value="4" ${base.tiposcad==='4'?'selected':''}>4 mesi dopo apertura</option>
-      <option value="5" ${base.tiposcad==='5'?'selected':''}>5 mesi dopo apertura</option>
-      <option value="6" ${base.tiposcad==='6'?'selected':''}>6 mesi dopo apertura</option>
-      <option value="7" ${base.tiposcad==='7'?'selected':''}>7 mesi dopo apertura</option>
-      <option value="8" ${base.tiposcad==='8'?'selected':''}>8 mesi dopo apertura</option>
-      <option value="9" ${base.tiposcad==='9'?'selected':''}>9 mesi dopo apertura</option>
-      <option value="10" ${base.tiposcad==='10'?'selected':''}>10 mesi dopo apertura</option>
-      <option value="11" ${base.tiposcad==='11'?'selected':''}>11 mesi dopo apertura</option>
-      <option value="12" ${base.tiposcad==='12'?'selected':''}>12 mesi dopo apertura</option>
-    </select>
-    <div class="edit-btns">
-      <button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>
-      <button type="button" class="edit-save" onclick="salvaPaccoProdotto(${paccoAttuale},${paccoTotale},'${codiceEsistente||''}')">${paccoAttuale<paccoTotale?'Salva e continua →':'Salva'}</button>
-    </div>
-    <div id="debug-log" style="margin-top:14px;padding:10px;background:#1a1a18;color:#0f0;font-size:10px;font-family:monospace;border-radius:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all">In attesa del click su Salva...</div>
-  `);
+  const titoloPacco=paccoTotale>1?(' (confezione '+paccoAttuale+' di '+paccoTotale+')'):'';
+  const labelBtn=paccoAttuale<paccoTotale?'Salva e continua →':'Salva';
+  const html=
+    '<h3><i class="ti ti-plus"></i> Aggiungi prodotto'+titoloPacco+'</h3>'+
+    '<label>Codice a barre (opzionale)</label>'+
+    '<input type="text" id="disp-codice" placeholder="es. 8001090341688" inputmode="numeric" value="'+esc(codiceEsistente||'')+'" '+(paccoAttuale>1?'readonly':'onblur="verificaCodiceManuale()"')+'>'+
+    '<p style="font-size:11px;color:#888780;margin-top:2px" id="disp-codice-status">'+(codiceEsistente?'Verifica che il numero corrisponda al codice sulla confezione':'')+'</p>'+
+    '<label>Categoria</label>'+
+    '<select id="disp-categoria" onchange="aggiornaCampiProdotto()">'+
+      '<option value="Alimenti" '+(base.categoria==='Alimenti'||!base.categoria?'selected':'')+'>🍽️ Alimenti</option>'+
+      '<option value="Cosmetici" '+(base.categoria==='Cosmetici'?'selected':'')+'>🧴 Cosmetici</option>'+
+      '<option value="Prodotti per la casa" '+(base.categoria==='Prodotti per la casa'?'selected':'')+'>🏠 Prodotti per la casa</option>'+
+      '<option value="Farmaceutici" '+(base.categoria==='Farmaceutici'?'selected':'')+'>💊 Farmaceutici</option>'+
+      '<option value="Altro" '+(base.categoria==='Altro'?'selected':'')+'>📦 Altro</option>'+
+    '</select>'+
+    '<label>Prodotto</label>'+
+    '<input type="text" id="disp-tipo" placeholder="es. Pasta, Dentifricio, Acqua..." value="'+esc(base.tipo||'')+'">'+
+    '<label>Marca</label>'+
+    '<input type="text" id="disp-marca" placeholder="es. Barilla, Oral B, Sant\'Anna..." value="'+esc(base.marca||'')+'">'+
+    (paccoAttuale===1?('<label>Quantità (numero confezioni)</label><input type="number" id="disp-quantita" min="1" value="'+(base.quantita||1)+'">'):'')+
+    '<label>Scadenza confezione '+paccoAttuale+(paccoTotale>1?(' di '+paccoTotale):'')+' (opzionale)</label>'+
+    '<input type="date" id="disp-scadenza" value="'+(base.scadenza||'')+'">'+
+    '<label>Scadenza dopo apertura (opzionale)</label>'+
+    '<select id="disp-tiposcad">'+
+      '<option value="" '+(!base.tiposcad?'selected':'')+'>— Nessuna regola particolare —</option>'+
+      [1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){
+        return '<option value="'+m+'" '+(base.tiposcad===String(m)?'selected':'')+'>'+m+(m===1?' mese':' mesi')+' dopo apertura</option>';
+      }).join('')+
+    '</select>'+
+    '<div class="edit-btns">'+
+      '<button type="button" class="edit-cancel" onclick="chiudiEdit()">Annulla</button>'+
+      '<button type="button" class="edit-save" id="btn-salva-prodotto">'+labelBtn+'</button>'+
+    '</div>'+
+    '<div id="debug-log" style="margin-top:14px;padding:10px;background:#1a1a18;color:#0f0;font-size:10px;font-family:monospace;border-radius:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all">In attesa del click su Salva...</div>';
+  apriEdit(html);
+  // collega l'evento click via JS puro, evitando problemi di escaping nell'attributo onclick
+  const btn=document.getElementById('btn-salva-prodotto');
+  if(btn){
+    btn.addEventListener('click',function(){
+      salvaPaccoProdotto(paccoAttuale,paccoTotale,codiceEsistente);
+    });
+  }
 }
 
 function aggiornaCampiProdotto(){
