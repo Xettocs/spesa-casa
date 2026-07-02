@@ -19,9 +19,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .header{background:#fff;border-bottom:0.5px solid #d3d1c7;padding:14px 16px;text-align:center}
 .header h1{font-size:17px;font-weight:500}
 .header p{font-size:12px;color:#888780;margin-top:2px}
-.tabs-select-wrap{display:flex;align-items:center;gap:8px;background:#fff;border-bottom:0.5px solid #d3d1c7;padding:10px 14px}
-.tabs-select-wrap select{flex:1;padding:10px 12px;border:0.5px solid #d3d1c7;border-radius:8px;font-size:14px;font-weight:500;color:#1a1a18;background:#fff;outline:none;max-width:480px;margin:0 auto}
-.tab-badge{position:relative;top:0;right:0;background:#C0392B;color:#fff;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;font-weight:600;flex-shrink:0}
+.main-nav{display:flex;align-items:stretch;background:#fff;border-bottom:0.5px solid #d3d1c7;max-width:480px;margin:0 auto;padding:2px 4px}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 2px 7px;cursor:pointer;color:#888780;position:relative;border-radius:8px;transition:background .15s,color .15s}
+.nav-item i{font-size:19px;line-height:1}
+.nav-item span{font-size:10px;font-weight:500;white-space:nowrap}
+.nav-item.active{color:#534AB7;background:#F0EEFC}
+.tab-badge{position:absolute;top:2px;right:10px;background:#C0392B;color:#fff;font-size:10px;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;font-weight:600;flex-shrink:0}
+.sub-nav{display:flex;border-radius:8px;overflow:hidden;border:0.5px solid #d3d1c7;margin-bottom:12px;background:#fff}
+.sub-nav-item{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 4px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:#888780;transition:all .2s}
+.sub-nav-item i{font-size:15px}
+.sub-nav-item.active{background:#534AB7;color:#fff}
+.usc-view{display:none}.usc-view.active{display:block}
 .content{padding:14px;max-width:480px;margin:0 auto}
 .section{display:none}.section.active{display:block}
 .card{background:#fff;border-radius:12px;border:0.5px solid #d3d1c7;padding:14px;margin-bottom:12px}
@@ -178,17 +186,12 @@ select:focus,input:focus{border-color:#534AB7}
   <p>Antonio &amp; Concetta</p>
 </div>
 
-<div class="tabs-select-wrap">
-  <select id="tab-select" onchange="switchTab(this.value)">
-    <option value="aggiungi">➕ Aggiungi</option>
-    <option value="lista">📋 Lista</option>
-    <option value="grafici">📊 Grafici</option>
-    <option value="riepilogo">🧮 Riepilogo</option>
-    <option value="spesa">🛒 Spesa</option>
-    <option value="todo">✅ Da fare</option>
-    <option value="dispensa">🧊 Dispensa</option>
-  </select>
-  <span class="tab-badge" id="dispensa-badge" style="display:none">0</span>
+<div class="main-nav">
+  <div class="nav-item active" data-tab="aggiungi" onclick="switchTab('aggiungi')"><i class="ti ti-square-rounded-plus"></i><span>Aggiungi</span></div>
+  <div class="nav-item" data-tab="uscite" onclick="switchTab('uscite')"><i class="ti ti-receipt"></i><span>Uscite</span></div>
+  <div class="nav-item" data-tab="spesa" onclick="switchTab('spesa')"><i class="ti ti-shopping-cart"></i><span>Spesa</span></div>
+  <div class="nav-item" data-tab="todo" onclick="switchTab('todo')"><i class="ti ti-checkbox"></i><span>Da fare</span></div>
+  <div class="nav-item" data-tab="dispensa" onclick="switchTab('dispensa')"><i class="ti ti-fridge"></i><span>Dispensa</span><span class="tab-badge" id="dispensa-badge" style="display:none">0</span></div>
 </div>
 
 <div class="content">
@@ -233,125 +236,136 @@ select:focus,input:focus{border-color:#534AB7}
   </div>
 </div>
 
-<!-- LISTA SPESE -->
-<div class="section" id="sec-lista">
-  <div class="card" style="padding:12px 14px">
-    <div class="person-toggle">
-      <div class="ptab active" id="lt-tutti" onclick="filtraLista('Tutti')">Tutti</div>
-      <div class="ptab" id="lt-antonio" onclick="filtraLista('Antonio')">Antonio</div>
-      <div class="ptab" id="lt-concetta" onclick="filtraLista('Concetta')">Concetta</div>
-    </div>
-    <div class="row3" style="margin-bottom:10px">
-      <div>
-        <select id="lista-mese" onchange="renderLista()">
-          <option value="">Mese</option>
-          <option value="1">Gennaio</option><option value="2">Febbraio</option>
-          <option value="3">Marzo</option><option value="4">Aprile</option>
-          <option value="5">Maggio</option><option value="6">Giugno</option>
-          <option value="7">Luglio</option><option value="8">Agosto</option>
-          <option value="9">Settembre</option><option value="10">Ottobre</option>
-          <option value="11">Novembre</option><option value="12">Dicembre</option>
-        </select>
-      </div>
-      <div>
-        <select id="lista-anno" onchange="renderLista()">
-          <option value="">Anno</option>
-        </select>
-      </div>
-      <div>
-        <select id="lista-cat" onchange="renderLista()">
-          <option value="">Categoria</option>
-          <option value="Abbonamenti">📱 Abbonamenti</option>
-          <option value="Beauty">💄 Beauty</option>
-          <option value="Casa">🏠 Casa</option>
-          <option value="Farmacia">💊 Farmacia</option>
-          <option value="Regali">🎁 Regali</option>
-          <option value="Ristoranti">🍽️ Ristoranti</option>
-          <option value="Shopping">🛍️ Shopping</option>
-          <option value="Supermercati">🛒 Supermercati</option>
-          <option value="Trasporti">🚗 Trasporti</option>
-          <option value="Vacanza">✈️ Vacanza</option>
-          <option value="Varie">📦 Varie</option>
-        </select>
-      </div>
-    </div>
-    <button class="btn btn-outline" style="margin-bottom:10px" onclick="ricarica()"><i class="ti ti-refresh"></i> Aggiorna dal foglio</button>
-    <div id="lista-spese"><div class="empty">Caricamento...</div></div>
-  </div>
-</div>
+<!-- USCITE (Lista + Grafici + Riepilogo) -->
+<div class="section" id="sec-uscite">
 
-<!-- GRAFICI -->
-<div class="section" id="sec-grafici">
-  <div class="card">
-    <div class="card-title"><i class="ti ti-sliders"></i> Filtri</div>
-    <div class="period-toggle">
-      <div class="period-tab active" id="gt-mensile" onclick="setGraficoPeriod('mensile')">Mensile</div>
-      <div class="period-tab" id="gt-annuale" onclick="setGraficoPeriod('annuale')">Annuale</div>
-    </div>
-    <div class="nav-row">
-      <button class="nav-btn" onclick="navGrafico(-1)">&#8592;</button>
-      <span id="grafico-periodo-label"></span>
-      <button class="nav-btn" onclick="navGrafico(1)">&#8594;</button>
-    </div>
-    <label>Confronto categoria (opzionale)</label>
-    <select id="grafico-cat-filter" onchange="renderGrafici()">
-      <option value="">— Tutte le categorie —</option>
-      <option value="Abbonamenti">📱 Abbonamenti</option>
-      <option value="Beauty">💄 Beauty</option>
-      <option value="Casa">🏠 Casa</option>
-      <option value="Farmacia">💊 Farmacia</option>
-      <option value="Regali">🎁 Regali</option>
-      <option value="Ristoranti">🍽️ Ristoranti</option>
-      <option value="Shopping">🛍️ Shopping</option>
-      <option value="Supermercati">🛒 Supermercati</option>
-      <option value="Trasporti">🚗 Trasporti</option>
-      <option value="Vacanza">✈️ Vacanza</option>
-      <option value="Varie">📦 Varie</option>
-    </select>
+  <div class="sub-nav">
+    <div class="sub-nav-item active" id="usc-tab-lista" onclick="switchUsciteView('lista')"><i class="ti ti-list"></i><span>Lista</span></div>
+    <div class="sub-nav-item" id="usc-tab-grafici" onclick="switchUsciteView('grafici')"><i class="ti ti-chart-pie"></i><span>Grafici</span></div>
+    <div class="sub-nav-item" id="usc-tab-riepilogo" onclick="switchUsciteView('riepilogo')"><i class="ti ti-calculator"></i><span>Riepilogo</span></div>
   </div>
-  <div id="grafici-container"></div>
-</div>
 
-<!-- RIEPILOGO -->
-<div class="section" id="sec-riepilogo">
-  <div class="card">
-    <div class="card-title"><i class="ti ti-calculator"></i> Filtri</div>
-    <div class="period-toggle">
-      <div class="period-tab active" id="rt-mensile" onclick="setRiepilogoPeriod('mensile')">Mensile</div>
-      <div class="period-tab" id="rt-annuale" onclick="setRiepilogoPeriod('annuale')">Annuale</div>
+  <!-- LISTA -->
+  <div class="usc-view active" id="usc-view-lista">
+    <div class="card" style="padding:12px 14px">
+      <div class="person-toggle">
+        <div class="ptab active" id="lt-tutti" onclick="filtraLista('Tutti')">Tutti</div>
+        <div class="ptab" id="lt-antonio" onclick="filtraLista('Antonio')">Antonio</div>
+        <div class="ptab" id="lt-concetta" onclick="filtraLista('Concetta')">Concetta</div>
+      </div>
+      <div class="row3" style="margin-bottom:10px">
+        <div>
+          <select id="lista-mese" onchange="renderLista()">
+            <option value="">Mese</option>
+            <option value="1">Gennaio</option><option value="2">Febbraio</option>
+            <option value="3">Marzo</option><option value="4">Aprile</option>
+            <option value="5">Maggio</option><option value="6">Giugno</option>
+            <option value="7">Luglio</option><option value="8">Agosto</option>
+            <option value="9">Settembre</option><option value="10">Ottobre</option>
+            <option value="11">Novembre</option><option value="12">Dicembre</option>
+          </select>
+        </div>
+        <div>
+          <select id="lista-anno" onchange="renderLista()">
+            <option value="">Anno</option>
+          </select>
+        </div>
+        <div>
+          <select id="lista-cat" onchange="renderLista()">
+            <option value="">Categoria</option>
+            <option value="Abbonamenti">📱 Abbonamenti</option>
+            <option value="Beauty">💄 Beauty</option>
+            <option value="Casa">🏠 Casa</option>
+            <option value="Farmacia">💊 Farmacia</option>
+            <option value="Regali">🎁 Regali</option>
+            <option value="Ristoranti">🍽️ Ristoranti</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Supermercati">🛒 Supermercati</option>
+            <option value="Trasporti">🚗 Trasporti</option>
+            <option value="Vacanza">✈️ Vacanza</option>
+            <option value="Varie">📦 Varie</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-outline" style="margin-bottom:10px" onclick="ricarica()"><i class="ti ti-refresh"></i> Aggiorna dal foglio</button>
+      <div id="lista-spese"><div class="empty">Caricamento...</div></div>
     </div>
-    <div class="nav-row">
-      <button class="nav-btn" onclick="navRiepilogo(-1)">&#8592;</button>
-      <span id="riepilogo-periodo-label"></span>
-      <button class="nav-btn" onclick="navRiepilogo(1)">&#8594;</button>
+  </div>
+
+  <!-- GRAFICI -->
+  <div class="usc-view" id="usc-view-grafici">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-sliders"></i> Filtri</div>
+      <div class="period-toggle">
+        <div class="period-tab active" id="gt-mensile" onclick="setGraficoPeriod('mensile')">Mensile</div>
+        <div class="period-tab" id="gt-annuale" onclick="setGraficoPeriod('annuale')">Annuale</div>
+      </div>
+      <div class="nav-row">
+        <button class="nav-btn" onclick="navGrafico(-1)">&#8592;</button>
+        <span id="grafico-periodo-label"></span>
+        <button class="nav-btn" onclick="navGrafico(1)">&#8594;</button>
+      </div>
+      <label>Confronto categoria (opzionale)</label>
+      <select id="grafico-cat-filter" onchange="renderGrafici()">
+        <option value="">— Tutte le categorie —</option>
+        <option value="Abbonamenti">📱 Abbonamenti</option>
+        <option value="Beauty">💄 Beauty</option>
+        <option value="Casa">🏠 Casa</option>
+        <option value="Farmacia">💊 Farmacia</option>
+        <option value="Regali">🎁 Regali</option>
+        <option value="Ristoranti">🍽️ Ristoranti</option>
+        <option value="Shopping">🛍️ Shopping</option>
+        <option value="Supermercati">🛒 Supermercati</option>
+        <option value="Trasporti">🚗 Trasporti</option>
+        <option value="Vacanza">✈️ Vacanza</option>
+        <option value="Varie">📦 Varie</option>
+      </select>
     </div>
-    <label>Confronto categoria (opzionale)</label>
-    <select id="riepilogo-cat-filter" onchange="renderRiepilogo()">
-      <option value="">— Tutte le categorie —</option>
-      <option value="Abbonamenti">📱 Abbonamenti</option>
-      <option value="Beauty">💄 Beauty</option>
-      <option value="Casa">🏠 Casa</option>
-      <option value="Farmacia">💊 Farmacia</option>
-      <option value="Regali">🎁 Regali</option>
-      <option value="Ristoranti">🍽️ Ristoranti</option>
-      <option value="Shopping">🛍️ Shopping</option>
-      <option value="Supermercati">🛒 Supermercati</option>
-      <option value="Trasporti">🚗 Trasporti</option>
-      <option value="Vacanza">✈️ Vacanza</option>
-      <option value="Varie">📦 Varie</option>
-    </select>
+    <div id="grafici-container"></div>
   </div>
-  <div class="card">
-    <div class="stat-grid">
-      <div class="stat"><div class="stat-label">Antonio</div><div class="stat-val" id="tot-antonio">€0</div><div class="stat-sub" id="n-antonio">0 spese</div></div>
-      <div class="stat"><div class="stat-label">Concetta</div><div class="stat-val" id="tot-concetta">€0</div><div class="stat-sub" id="n-concetta">0 spese</div></div>
+
+  <!-- RIEPILOGO -->
+  <div class="usc-view" id="usc-view-riepilogo">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-calculator"></i> Filtri</div>
+      <div class="period-toggle">
+        <div class="period-tab active" id="rt-mensile" onclick="setRiepilogoPeriod('mensile')">Mensile</div>
+        <div class="period-tab" id="rt-annuale" onclick="setRiepilogoPeriod('annuale')">Annuale</div>
+      </div>
+      <div class="nav-row">
+        <button class="nav-btn" onclick="navRiepilogo(-1)">&#8592;</button>
+        <span id="riepilogo-periodo-label"></span>
+        <button class="nav-btn" onclick="navRiepilogo(1)">&#8594;</button>
+      </div>
+      <label>Confronto categoria (opzionale)</label>
+      <select id="riepilogo-cat-filter" onchange="renderRiepilogo()">
+        <option value="">— Tutte le categorie —</option>
+        <option value="Abbonamenti">📱 Abbonamenti</option>
+        <option value="Beauty">💄 Beauty</option>
+        <option value="Casa">🏠 Casa</option>
+        <option value="Farmacia">💊 Farmacia</option>
+        <option value="Regali">🎁 Regali</option>
+        <option value="Ristoranti">🍽️ Ristoranti</option>
+        <option value="Shopping">🛍️ Shopping</option>
+        <option value="Supermercati">🛒 Supermercati</option>
+        <option value="Trasporti">🚗 Trasporti</option>
+        <option value="Vacanza">✈️ Vacanza</option>
+        <option value="Varie">📦 Varie</option>
+      </select>
     </div>
-    <div id="diff-section"></div>
+    <div class="card">
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-label">Antonio</div><div class="stat-val" id="tot-antonio">€0</div><div class="stat-sub" id="n-antonio">0 spese</div></div>
+        <div class="stat"><div class="stat-label">Concetta</div><div class="stat-val" id="tot-concetta">€0</div><div class="stat-sub" id="n-concetta">0 spese</div></div>
+      </div>
+      <div id="diff-section"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-chart-bar"></i> Confronto per categoria</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chartConfronto"></canvas></div>
+    </div>
   </div>
-  <div class="card">
-    <div class="card-title"><i class="ti ti-chart-bar"></i> Confronto per categoria</div>
-    <div class="chart-wrap" style="height:240px"><canvas id="chartConfronto"></canvas></div>
-  </div>
+
 </div>
 
 <!-- LISTA DELLA SPESA -->
@@ -596,17 +610,24 @@ function popolaAnni(){
 }
 
 // ---- TABS ----
+let usciteSubView='lista';
 function switchTab(name){
-  const selectEl=document.getElementById('tab-select');
-  if(selectEl && selectEl.value!==name) selectEl.value=name;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.tab===name));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
-  if(name==='lista') renderLista();
-  if(name==='grafici'){aggiornaGraficoLabel();renderGrafici();}
-  if(name==='riepilogo'){aggiornaRiepilogoLabel();renderRiepilogo();}
+  if(name==='uscite') switchUsciteView(usciteSubView);
   if(name==='spesa') ricaricaSpesa();
   if(name==='todo') ricaricaTodo();
   if(name==='dispensa') ricaricaDispensa();
+}
+
+function switchUsciteView(view){
+  usciteSubView=view;
+  document.querySelectorAll('.sub-nav-item').forEach(el=>el.classList.toggle('active',el.id==='usc-tab-'+view));
+  document.querySelectorAll('.usc-view').forEach(el=>el.classList.toggle('active',el.id==='usc-view-'+view));
+  if(view==='lista') renderLista();
+  if(view==='grafici'){aggiornaGraficoLabel();renderGrafici();}
+  if(view==='riepilogo'){aggiornaRiepilogoLabel();renderRiepilogo();}
 }
 
 // ---- SPESE ----
